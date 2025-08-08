@@ -4,27 +4,13 @@ import { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDown, Code, Sparkles, Zap, Users, Star, Mail, Phone, MapPin, Send, Clock, Shield, CheckCircle, MessageCircle, Calendar, Rocket } from 'lucide-react';
 import { sendContactEmail, type ContactFormData } from '../lib/email';
+import { useContactForm } from '@/hooks/useContactForm';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const { scrollYProgress } = useScroll();
-  
-  // Contact form state
-  const [formData, setFormData] = useState<ContactFormData>({
-    name: '',
-    email: '',
-    budget: '',
-    projectType: '',
-    message: '',
-    company: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<{
-    type: 'success' | 'error' | null;
-    message: string;
-  }>({ type: null, message: '' });
-  
-  // Enhanced Parallax transforms for space navigation
+
+  // Parallax transforms
   const skyY = useTransform(scrollYProgress, [0, 1], ['0%', '-30%']);
   const starLayer1Y = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
   const starLayer2Y = useTransform(scrollYProgress, [0, 1], ['0%', '75%']);
@@ -32,62 +18,24 @@ export default function Home() {
   const starLayer4Y = useTransform(scrollYProgress, [0, 1], ['0%', '95%']);
   const galaxyY = useTransform(scrollYProgress, [0.7, 1], ['100%', '0%']);
   const nebulaY = useTransform(scrollYProgress, [0, 1], ['100%', '200%']);
-  
-  // Smooth transition opacity for final section
   const transitionOpacity = useTransform(scrollYProgress, [0.6, 0.8], [0, 1]);
 
-  // Form handling functions
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus({ type: null, message: '' });
-
-    try {
-      const result = await sendContactEmail(formData);
-      
-      if (result.success) {
-        setSubmitStatus({
-          type: 'success',
-          message: result.message
-        });
-        // Reset form
-        setFormData({
-          name: '',
-          email: '',
-          budget: '',
-          projectType: '',
-          message: '',
-          company: ''
-        });
-      } else {
-        setSubmitStatus({
-          type: 'error',
-          message: result.message
-        });
-      }
-    } catch (error) {
-      setSubmitStatus({
-        type: 'error',
-        message: 'Something went wrong. Please try again or contact us directly at hello@lunalabs.com'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Contact form hook
+  const {
+    formData,
+    isSubmitting,
+    submitStatus,
+    handleInputChange,
+    handleSubmit
+  } = useContactForm();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted) return null;
+
+
 
   return (
     <div className="relative min-h-[500vh] overflow-hidden"
@@ -710,6 +658,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </motion.button>
               </form>
+              <pre>{JSON.stringify(formData, null, 2)}</pre>
             </motion.div>
 
             {/* Compact Contact Info */}
