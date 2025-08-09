@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, Code, Sparkles, Zap, Users, Star, Mail, Phone, MapPin, Send, Clock, Shield, CheckCircle, MessageCircle, Calendar, Rocket } from 'lucide-react';
+import { ArrowDown, Code, Sparkles, Zap, Users, Star, Mail, Clock, Shield, CheckCircle, MessageCircle, Calendar, Rocket } from 'lucide-react';
+import Image from 'next/image';
 import { sendContactEmail, type ContactFormData } from '../lib/email';
 
 export default function Home() {
@@ -73,7 +74,7 @@ export default function Home() {
           message: result.message
         });
       }
-    } catch (error) {
+    } catch {
       setSubmitStatus({
         type: 'error',
         message: 'Something went wrong. Please try again or contact us directly at hello@lunalabs.com'
@@ -88,6 +89,32 @@ export default function Home() {
   }, []);
 
   if (!mounted) return null;
+
+  // Portfolio projects (update freely)
+  const projects: Array<{
+    title: string;
+    description: string;
+    image?: string;
+    href?: string;
+  }> = [
+    {
+      title: 'Dealer Analytics Dashboard',
+      description: 'Panel de control para concesionaria: ventas, créditos, stock, autos en taller y DYP. KPIs en tiempo real con filtros por rango de fechas.',
+      // Screenshot located in public/dealer-dahboard.png
+      image: '/dealer-dahboard.png',
+      href: '#contact'
+    },
+    {
+      title: 'E‑commerce Growth Monitor',
+      description: 'Conversion tracking, A/B testing health, and inventory signals for scale-ups.',
+      href: '#contact'
+    },
+    {
+      title: 'SaaS Billing Console',
+      description: 'Stripe-powered metered billing with churn insights and cohort analytics.',
+      href: '#contact'
+    },
+  ];
 
   return (
     <div className="relative min-h-[500vh] overflow-hidden"
@@ -171,7 +198,7 @@ export default function Home() {
               <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-600 rounded-xl flex items-center justify-center">
                 <Star className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl lg:text-2xl font-bold text-white tracking-tight">CodeCraft</span>
+              <span className="text-xl lg:text-2xl font-bold text-white tracking-tight">Luna Labs</span>
             </motion.div>
 
             {/* Desktop Navigation */}
@@ -190,8 +217,9 @@ export default function Home() {
                   {item}
                 </motion.a>
               ))}
-              <motion.button 
-                className="nav-cta ml-4"
+              <motion.a 
+                href="#contact"
+                className="nav-cta with-iris ml-4"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
@@ -199,7 +227,7 @@ export default function Home() {
                 whileTap={{ scale: 0.95 }}
               >
                 Get Started
-              </motion.button>
+              </motion.a>
             </div>
 
             {/* Mobile Menu Button */}
@@ -227,10 +255,18 @@ export default function Home() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="hero-card card-padding-xl rounded-3xl mx-auto max-w-6xl"
+                className="hero-card with-iris card-padding-xl rounded-3xl mx-auto max-w-6xl"
+                onMouseMove={(e) => {
+                  const t = e.currentTarget as HTMLDivElement;
+                  const r = t.getBoundingClientRect();
+                  const x = ((e.clientX - r.left) / r.width) * 100;
+                  const y = ((e.clientY - r.top) / r.height) * 100;
+                  t.style.setProperty('--x', `${x}%`);
+                  t.style.setProperty('--y', `${y}%`);
+                }}
           >
             <motion.h1 
-              className="hero-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white text-spacing-extra-loose leading-[1.1]"
+              className="hero-title font-bold text-white text-spacing-extra-loose"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.4 }}
@@ -242,7 +278,7 @@ export default function Home() {
             </motion.h1>
             
             <motion.p 
-              className="hero-description text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white/85 text-spacing-extra-loose max-w-5xl mx-auto leading-[1.4] font-light"
+              className="hero-description text-white/85 text-spacing-extra-loose max-w-5xl mx-auto font-light"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.6 }}
@@ -276,8 +312,8 @@ export default function Home() {
           </motion.div>
         </div>
         
-        <motion.div 
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+            <motion.div 
+              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-subtle-float"
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
@@ -285,8 +321,75 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* Portfolio Section */}
+      <section id="portfolio" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+        <div className="content-container w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            viewport={{ once: true }}
+            className="text-center text-spacing-extra-loose mb-12"
+          >
+            <h2 className="section-title font-bold text-white text-spacing-loose">
+              Featured Work
+            </h2>
+            <p className="section-subtitle text-white/80 max-w-4xl mx-auto font-light">
+              A glimpse into the projects we’ve launched across the cosmos
+            </p>
+          </motion.div>
+
+          <div className="grid gap-6 md:gap-8 lg:gap-10 xl:gap-12 md:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="hero-card with-iris rounded-2xl overflow-hidden group flex flex-col"
+                onMouseMove={(e) => {
+                  const t = e.currentTarget as HTMLDivElement;
+                  const r = t.getBoundingClientRect();
+                  const x = ((e.clientX - r.left) / r.width) * 100;
+                  const y = ((e.clientY - r.top) / r.height) * 100;
+                  t.style.setProperty('--x', `${x}%`);
+                  t.style.setProperty('--y', `${y}%`);
+                }}
+              >
+                <div className="relative h-56 md:h-64 overflow-hidden">
+                  {project.image ? (
+            <Image
+                      src={project.image}
+                      alt={project.title}
+                      fill
+                      sizes="(min-width: 1280px) 400px, 50vw"
+                      className="object-cover object-center opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-blue-500/30 to-indigo-500/30" />
+                  )}
+                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 35%)' }} />
+                </div>
+                <div className="p-6 md:p-8">
+                  <h3 className="text-xl md:text-2xl font-semibold text-white mb-2 animate-fade-up-minimal">{project.title}</h3>
+                  <p className="text-white/75 text-base md:text-lg animate-fade-up-minimal" style={{ animationDelay: `${0.05 * index}s` }}>{project.description}</p>
+                </div>
+                <div className="px-6 md:px-8 pb-6 md:pb-8 mt-auto">
+                  {project.href ? (
+                    <a href={project.href} className="btn-secondary rounded-full text-white w-full inline-flex justify-center">View Case Study</a>
+                  ) : (
+                    <button className="btn-secondary rounded-full text-white w-full">View Case Study</button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Services Section */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+      <section id="services" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
         <div className="content-container">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -295,10 +398,10 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center text-spacing-extra-loose"
           >
-            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white text-spacing-loose leading-tight">
+            <h2 className="section-title font-bold text-white text-spacing-loose">
               Cosmic Capabilities
             </h2>
-            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/80 max-w-4xl mx-auto leading-relaxed font-light">
+            <p className="section-subtitle text-white/80 max-w-4xl mx-auto font-light">
               From nebula concepts to stellar deployments, we navigate the cosmos of code
             </p>
           </motion.div>
@@ -327,17 +430,25 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                className="service-card card-padding-md rounded-2xl h-full flex flex-col group"
+                className="service-card with-iris card-padding-md rounded-2xl h-full flex flex-col group"
+                onMouseMove={(e) => {
+                  const t = e.currentTarget as HTMLDivElement;
+                  const r = t.getBoundingClientRect();
+                  const x = ((e.clientX - r.left) / r.width) * 100;
+                  const y = ((e.clientY - r.top) / r.height) * 100;
+                  t.style.setProperty('--x', `${x}%`);
+                  t.style.setProperty('--y', `${y}%`);
+                }}
               >
                 <div className="text-white/90 flex justify-center group-hover:text-white transition-colors duration-300">
                   <div className="service-card-icon">
                     {service.icon}
                   </div>
                 </div>
-                <h3 className="service-card-title text-center">
+                <h3 className="service-card-title text-center animate-fade-up-minimal">
                   {service.title}
                 </h3>
-                <p className="service-card-description text-center flex-grow">
+                <p className="service-card-description text-center flex-grow animate-fade-up-minimal" style={{ animationDelay: `${0.05 * index}s` }}>
                   {service.description}
                 </p>
               </motion.div>
@@ -347,7 +458,7 @@ export default function Home() {
       </section>
 
       {/* About Section */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+      <section id="about" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
         <div className="content-container">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -405,7 +516,7 @@ export default function Home() {
                           <h3 className="text-lg lg:text-xl font-semibold text-white mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
                             {feature.title}
                           </h3>
-                          <p className="text-white/70 text-sm lg:text-base leading-relaxed group-hover:text-white/80 transition-colors duration-300">
+                          <p className="text-white/70 text-base lg:text-lg leading-relaxed group-hover:text-white/80 transition-colors duration-300">
                             {feature.desc}
                           </p>
                         </div>
@@ -416,7 +527,15 @@ export default function Home() {
               </div>
               <div className="relative flex justify-center lg:justify-end">
                 <motion.div 
-                  className="stat-card rounded-3xl p-12 lg:p-16 text-center max-w-md group"
+                  className="stat-card with-iris rounded-3xl p-12 lg:p-16 text-center max-w-md group animate-fade-up-minimal"
+                  onMouseMove={(e) => {
+                    const t = e.currentTarget as HTMLDivElement;
+                    const r = t.getBoundingClientRect();
+                    const x = ((e.clientX - r.left) / r.width) * 100;
+                    const y = ((e.clientY - r.top) / r.height) * 100;
+                    t.style.setProperty('--x', `${x}%`);
+                    t.style.setProperty('--y', `${y}%`);
+                  }}
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   whileHover={{ scale: 1.05 }}
@@ -454,7 +573,7 @@ export default function Home() {
                     <p className="text-xl lg:text-2xl font-semibold text-white/90 mb-3 group-hover:text-white transition-colors duration-300">
                       Projects Delivered
                     </p>
-                    <p className="text-white/60 text-sm lg:text-base group-hover:text-white/70 transition-colors duration-300">
+                    <p className="text-white/60 text-base lg:text-lg group-hover:text-white/70 transition-colors duration-300">
                       Across global industries
                     </p>
                   </motion.div>
@@ -466,7 +585,7 @@ export default function Home() {
       </section>
 
       {/* Enhanced Contact Section */}
-      <section className="section-spacing relative flex items-center justify-center z-10" style={{ minHeight: '80vh' }}>
+      <section id="contact" className="section-spacing relative flex items-center justify-center z-10" style={{ minHeight: '80vh' }}>
         <div className="content-container">
           {/* Compact Hero Introduction */}
           <motion.div
@@ -525,7 +644,15 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
-              className="contact-form-enhanced rounded-2xl card-padding-lg"
+            className="contact-form-enhanced with-iris rounded-2xl card-padding-lg"
+            onMouseMove={(e) => {
+              const target = e.currentTarget as HTMLDivElement;
+              const rect = target.getBoundingClientRect();
+              const x = ((e.clientX - rect.left) / rect.width) * 100;
+              const y = ((e.clientY - rect.top) / rect.height) * 100;
+              target.style.setProperty('--x', `${x}%`);
+              target.style.setProperty('--y', `${y}%`);
+            }}
             >
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
@@ -538,7 +665,7 @@ export default function Home() {
                   Start Your Mission
                 </h3>
                 <p className="text-white/80 leading-relaxed">
-                  Share your project details and let's bring your vision to life.
+                  Share your project details and let&#39;s bring your vision to life.
                 </p>
               </motion.div>
               
@@ -678,7 +805,7 @@ export default function Home() {
                       ) : (
                         <Mail className="w-5 h-5 text-red-400" />
                       )}
-                      <p className="text-sm font-medium">{submitStatus.message}</p>
+                      <p className="text-base md:text-lg font-medium">{submitStatus.message}</p>
                     </div>
                   </motion.div>
                 )}
@@ -718,7 +845,15 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
               viewport={{ once: true }}
-              className="contact-info-enhanced"
+              className="contact-info-enhanced with-iris"
+              onMouseMove={(e) => {
+                const t = e.currentTarget as HTMLDivElement;
+                const r = t.getBoundingClientRect();
+                const x = ((e.clientX - r.left) / r.width) * 100;
+                const y = ((e.clientY - r.top) / r.height) * 100;
+                t.style.setProperty('--x', `${x}%`);
+                t.style.setProperty('--y', `${y}%`);
+              }}
             >
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
@@ -728,7 +863,7 @@ export default function Home() {
                 className="mb-6"
               >
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                  Let's Connect
+                  Let&#39;s Connect
                 </h3>
                 <p className="text-white/80 leading-relaxed">
                   Choose your preferred way to reach us.
@@ -747,7 +882,7 @@ export default function Home() {
                     <Mail className="w-6 h-6 text-white" />
                   </div>
                   <h4 className="text-lg font-bold text-white mb-1">Email Us</h4>
-                  <p className="text-white/70 mb-3 text-sm">
+                  <p className="text-white/70 mb-3 text-base md:text-lg">
                     24-hour response guarantee
                   </p>
                   <a 
@@ -770,7 +905,7 @@ export default function Home() {
                     <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <h4 className="text-lg font-bold text-white mb-1">Live Chat</h4>
-                  <p className="text-white/70 mb-3 text-sm">
+                  <p className="text-white/70 mb-3 text-base md:text-lg">
                     Instant answers during business hours
                   </p>
                   <div className="text-purple-300 font-semibold inline-flex items-center gap-2">
@@ -790,7 +925,7 @@ export default function Home() {
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
                   <h4 className="text-lg font-bold text-white mb-1">Free Consultation</h4>
-                  <p className="text-white/70 mb-3 text-sm">
+                  <p className="text-white/70 mb-3 text-base md:text-lg">
                     30-minute strategy call
                   </p>
                   <button className="text-purple-300 hover:text-purple-200 transition-colors duration-300 font-semibold inline-flex items-center gap-2 group/btn">
@@ -812,7 +947,7 @@ export default function Home() {
                   <CheckCircle className="w-5 h-5 text-green-400" />
                   <h4 className="font-semibold text-white">24h Response Guarantee</h4>
                 </div>
-                <p className="text-green-200/80 text-sm leading-relaxed">
+                <p className="text-green-200/80 text-base md:text-lg leading-relaxed">
                   Most inquiries receive a detailed reply within 4 hours.
                 </p>
               </motion.div>
@@ -923,7 +1058,7 @@ export default function Home() {
                 transition={{ duration: 1.2, delay: 0.6, ease: [0.25, 0.8, 0.25, 1] }}
                 viewport={{ once: true }}
               >
-                You've reached the heart of the cosmos
+                You&#39;ve reached the heart of the cosmos
               </motion.p>
               <motion.p 
                 className="text-lg sm:text-xl md:text-2xl text-white/70 text-spacing-extra-loose max-w-4xl mx-auto leading-relaxed font-light"
@@ -933,7 +1068,7 @@ export default function Home() {
                 viewport={{ once: true }}
               >
                 From distant stars of innovation to the galactic core of implementation, 
-                let's launch your digital dreams into the infinite universe of possibilities.
+                let&#39;s launch your digital dreams into the infinite universe of possibilities.
               </motion.p>
               
               <motion.div 
