@@ -254,12 +254,12 @@ export default function Home() {
               {/* Language Toggle */}
               <div className="ml-6 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-white/10 to-white/5 p-1 border border-white/25 backdrop-blur-md shadow-lg" style={{ marginLeft: '1.5rem', padding: '0.5rem' }}>
                 <button
-                  className={`px-4 py-2 text-sm font-semibold rounded-full transition-all ${lang==='en' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
+                  className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${lang==='en' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
                   onClick={() => setLang('en')}
                   aria-pressed={lang==='en'}
                 >EN</button>
                 <button
-                  className={`px-4 py-2 text-sm font-semibold rounded-full transition-all ${lang==='es' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
+                  className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${lang==='es' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
                   onClick={() => setLang('es')}
                   aria-pressed={lang==='es'}
                 >ES</button>
@@ -605,7 +605,7 @@ export default function Home() {
                     <p className="text-lg lg:text-xl font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300 break-words max-w-xs mx-auto">
                       Client Satisfaction
                     </p>
-                    <p className="text-right w-full">Guarantee</p>
+                    <p >Guarantee</p>
                     
                   </motion.div>
                 </motion.div>
