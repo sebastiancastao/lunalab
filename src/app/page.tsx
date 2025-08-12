@@ -2,13 +2,44 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, Code, Sparkles, Zap, Users, Star, Mail, Phone, MapPin, Send, Clock, Shield, CheckCircle, MessageCircle, Calendar, Rocket } from 'lucide-react';
-import { sendContactEmail, type ContactFormData } from '../lib/email';
+import { ArrowDown, Code, Users, Star, Mail, Clock, Shield, CheckCircle, Rocket, Smartphone, Workflow } from 'lucide-react';
+import Image from 'next/image';
 import { useContactForm } from '@/hooks/useContactForm';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const { scrollYProgress } = useScroll();
+  const [lang, setLang] = useState<'en' | 'es'>(() => {
+    if (typeof window === 'undefined') return 'en';
+    return (localStorage.getItem('lang') as 'en' | 'es') || 'en';
+  });
+
+  const t = lang === 'en'
+    ? {
+        services: 'Services',
+        about: 'About',
+        portfolio: 'Portfolio',
+        contact: 'Contact',
+        getStarted: 'Get Started',
+        startProject: 'Start Your Project',
+        viewWork: 'View Our Work',
+      }
+    : {
+        services: 'Servicios',
+        about: 'Acerca',
+        portfolio: 'Portafolio',
+        contact: 'Contacto',
+        getStarted: 'Comenzar',
+        startProject: 'Inicia tu proyecto',
+        viewWork: 'Ver nuestro trabajo',
+      };
+
+  const navLinks = [
+    { id: 'services', label: t.services },
+    { id: 'about', label: t.about },
+    { id: 'portfolio', label: t.portfolio },
+    { id: 'contact', label: t.contact },
+  ];
 
   // Parallax transforms
   const skyY = useTransform(scrollYProgress, [0, 1], ['0%', '-30%']);
@@ -31,11 +62,77 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    try { localStorage.setItem('lang', lang); } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem('lang', lang); } catch {}
+  }, [lang]);
 
   if (!mounted) return null;
 
-
+  // Portfolio projects
+  const projects: Array<{
+    title: string;
+    description: string;
+    image?: string;
+    video?: string;
+    poster?: string;
+    href?: string;
+  }> = [
+    {
+      title: 'AI productivity app',
+      description: 'AI productivity app featuring AI chatbots, auto-scheduling, and Google Calendar integration.',
+      video: '/Grabación 2025-06-05 082816.mp4',
+      poster: '/Captura de pantalla 2025-06-19 182335.png',
+      href: '#contact'
+    },
+    {
+      title: 'Realstate Platform with AI',
+      description: 'Platform that uses AI to rate the environment of a property to assure quality of living—evaluating security, entertainment, nature, and traffic.',
+      image: '/Captura de pantalla 2024-08-27 144922.png',
+      href: '#contact'
+    },
+    {
+      title: 'Transpaservic Mobile & Dispatch',
+      description: 'Mobile-first operations dashboard for transport services: order scanning, approval flow, and ticket generation integrated with driver operations.',
+      image: '/Captura de pantalla 2025-08-12 093338.png',
+      href: '#contact'
+    },
+    {
+      title: 'PetuLap Electronics Catalog',
+      description: 'Landing page and catalog site for refurbished laptops and computers, optimized for lead capture and WhatsApp contact.',
+      image: '/Captura de pantalla 2025-08-12 095946.png',
+      href: '#contact'
+    },
+    {
+      title: 'BP Ventures Invoicing Suite',
+      description: 'Multi-company invoicing dashboard with filtering, status tracking, and invoice actions for finance teams.',
+      image: '/Captura de pantalla 2025-08-12 100524.png',
+      href: '#contact'
+    },
+    {
+      title: 'Aura Admin Console',
+      description: 'Administration panel for managing AI assistant chats, client records, and system monitoring in a unified dashboard.',
+      image: '/Captura de pantalla 2025-08-12 103906.png',
+      href: '#contact'
+    },
+    {
+      title: 'Logistics Palletization Simulator',
+      description: 'Web app for warehouse and transportation operations that simulates palletization: calculates how many cartons fit on a pallet based on carton geometry and dry van capacity constraints, with support for refrigerated cargo.',
+      video: '/Grabación 2025-08-11 172552.mp4',
+      poster: '/Captura de pantalla 2025-06-19 182335.png',
+      href: '#contact'
+    },
+    {
+      title: 'Dealer Analytics Dashboard',
+      description: 'Real-time KPIs, sales, credit, and inventory tracking with advanced filtering.',
+      video: '/Grabación 2025-08-12 084414.mp4',
+      poster: '/Captura de pantalla 2025-06-19 182335.png',
+      href: '#contact'
+    },
+  ];
 
   return (
     <div className="relative min-h-[500vh] overflow-hidden"
@@ -116,18 +213,23 @@ export default function Home() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-600 rounded-xl flex items-center justify-center">
-                <Star className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl lg:text-2xl font-bold text-white tracking-tight">CodeCraft</span>
+              
+              <div className="logo" aria-label="Luna Lab">
+      
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="16" cy="16" r="9.5" stroke="#EAECEF" stroke-width="2"/>
+        <circle cx="19" cy="13" r="8" fill="#0A0B10"/>
+      </svg>
+              <span className="logo-text">Luna Lab</span>
+    </div>
             </motion.div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-2">
-              {['Services', 'About', 'Portfolio', 'Contact'].map((item, index) => (
+            <div className="hidden lg:flex items-center space-x-2 ml-auto">
+              {navLinks.map((link, index) => (
                 <motion.a 
-                  key={item}
-                  href={`#${item.toLowerCase()}`} 
+                  key={link.id}
+                  href={`#${link.id}`} 
                   className="nav-link text-white/90 hover:text-white transition-all duration-300"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -135,19 +237,33 @@ export default function Home() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {item}
+                  {link.label}
                 </motion.a>
               ))}
-              <motion.button 
-                className="nav-cta ml-4"
+              <motion.a 
+                href="#contact"
+                className="nav-cta ml-2"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Get Started
-              </motion.button>
+                {t.getStarted}
+              </motion.a>
+              {/* Language Toggle */}
+              <div className="ml-6 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-white/10 to-white/5 p-1 border border-white/25 backdrop-blur-md shadow-lg" style={{ marginLeft: '1.5rem', padding: '0.5rem' }}>
+                <button
+                  className={`px-4 py-2 text-sm font-semibold rounded-full transition-all ${lang==='en' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
+                  onClick={() => setLang('en')}
+                  aria-pressed={lang==='en'}
+                >EN</button>
+                <button
+                  className={`px-4 py-2 text-sm font-semibold rounded-full transition-all ${lang==='es' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
+                  onClick={() => setLang('es')}
+                  aria-pressed={lang==='es'}
+                >ES</button>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -169,57 +285,75 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+      <section className="section-spacing relative min-h-[70vh] flex items-center justify-center z-10">
         <div className="content-container text-center">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="hero-card card-padding-xl rounded-3xl mx-auto max-w-6xl"
+            className="hero-card card-padding-xl rounded-3xl mx-auto max-w-6xl p-6 md:p-10 relative overflow-hidden"
           >
+            {/* Animated engagement elements */}
+            <motion.div
+              className="pointer-events-none absolute -top-10 right-6 w-40 h-40 sm:w-56 sm:h-56 rounded-full bg-gradient-to-br from-purple-500/30 via-blue-500/30 to-indigo-500/30 blur-2xl"
+              animate={{ x: [0, 18, -12, 0], y: [0, -14, 8, 0], rotate: [0, 12, -10, 0] }}
+              transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+              className="pointer-events-none absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-gradient-to-tr from-indigo-500/20 via-blue-500/20 to-purple-500/20 blur-xl"
+              animate={{ x: [0, -10, 6, 0], y: [0, 8, -6, 0], scale: [1, 1.06, 0.98, 1] }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            />
+            <motion.div
+              className="pointer-events-none absolute top-6 left-1/2 w-1.5 h-1.5 bg-white/70 rounded-full"
+              animate={{ y: [0, -6, 0], opacity: [0.4, 0.9, 0.4] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
             <motion.h1 
-              className="hero-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white text-spacing-extra-loose leading-[1.1]"
+              className="hero-title text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white text-spacing-loose leading-tight"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.4 }}
             >
-              <span className="hero-title-line block text-spacing-tight">Exploring Digital</span>
+              <span className="hero-title-line block text-spacing-tight">{lang === 'en' ? 'Exploring Digital' : 'Explorando'}</span>
               <span className="hero-title-gradient block">
-                Frontiers
+                {lang === 'en' ? 'Frontiers' : 'Fronteras Digitales'}
               </span>
             </motion.h1>
             
             <motion.p 
-              className="hero-description text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white/85 text-spacing-extra-loose max-w-5xl mx-auto leading-[1.4] font-light"
+              className="hero-description text-sm sm:text-base md:text-lg lg:text-lg text-white/85 text-spacing-relaxed max-w-3xl mx-auto leading-relaxed font-light break-words"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.6 }}
             >
-              <span className="hero-description-line block text-spacing-relaxed">We are cosmic innovators, navigating the infinite</span>
-              <span className="hero-description-line block text-spacing-relaxed">possibilities of technology to create stellar</span>
-              <span className="hero-description-line block">software solutions that propel your business to new galaxies.</span>
+              <span className="hero-description-line block text-spacing-relaxed">{lang === 'en' ? 'We are cosmic innovators, navigating the infinite' : 'Somos innovadores cósmicos, navegando el infinito'}</span>
+              <span className="hero-description-line block text-spacing-relaxed">{lang === 'en' ? 'possibilities of technology to create stellar' : 'de posibilidades de la tecnología para crear'}</span>
+              <span className="hero-description-line block">{lang === 'en' ? 'software solutions that propel your business to new galaxies.' : 'soluciones que impulsen tu negocio a nuevas galaxias.'}</span>
             </motion.p>
             
             <motion.div 
-              className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.8 }}
             >
-              <motion.button
+              <motion.a
+                href="#contact"
                 className="btn-primary rounded-full text-white"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 Start Your Project
-              </motion.button>
-              <motion.button
+              </motion.a>
+              <motion.a
+                href="#portfolio"
                 className="btn-secondary rounded-full text-white"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 View Our Work
-              </motion.button>
+              </motion.a>
             </motion.div>
           </motion.div>
         </div>
@@ -233,8 +367,78 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* Portfolio Section */}
+      <section id="portfolio" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+        <div className="content-container w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            viewport={{ once: true }}
+            className="text-center text-spacing-extra-loose mb-12"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
+              {lang === 'en' ? 'Featured Work' : 'Trabajo Destacado'}
+            </h2>
+            <p className="text-white/80 max-w-4xl mx-auto mt-3 text-base sm:text-lg md:text-xl font-light">
+              {lang === 'en' ? 'A glimpse into the projects we’ve delivered across industries' : 'Un vistazo a los proyectos que hemos entregado en diversas industrias'}
+            </p>
+          </motion.div>
+
+          <div className="grid gap-6 md:gap-8 lg:gap-10 xl:gap-12 md:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project, index) => (
+              <motion.div
+                key={project.title}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="hero-card rounded-2xl overflow-hidden group flex flex-col ring-1 ring-white/10 hover:ring-white/20 transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <div className="relative h-56 md:h-64 overflow-hidden">
+                  {project.video ? (
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      preload="metadata"
+                      playsInline
+                      poster={project.poster ? encodeURI(project.poster) : undefined}
+                      className="absolute inset-0 w-full h-full object-cover object-center opacity-95"
+                      style={{ objectPosition: project.title === 'Dealer Analytics Dashboard' ? 'left center' : (project.title === 'Logistics Palletization Simulator' ? '43% center' : '50% center') }}
+                      src={encodeURI(project.video)}
+                    />
+                  ) : project.image ? (
+                    <Image
+                      src={project.image}
+                      alt={project.title}
+                      fill
+                      sizes="(min-width: 1280px) 400px, 50vw"
+                      className="object-cover object-center opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.005]"
+                      style={{ objectPosition: project.title === 'BP Ventures Invoicing Suite' ? 'left center' : undefined }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-blue-500/30 to-indigo-500/30" />
+                  )}
+                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 35%)' }} />
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+                  <div className="absolute top-3 right-3 text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white/90">
+                    {project.video ? 'Video' : 'Image'}
+                  </div>
+                </div>
+                <div className="px-6 md:px-8 lg:px-10 xl:px-14 py-6 md:py-8 lg:py-10 xl:py-12">
+                  <h3 className="px-6 text-xl md:text-2xl font-semibold text-white leading-tight tracking-tight mb-4 break-words" style={{ padding: '1.2rem' }}>{project.title}</h3>
+                  <p className="px-6 text-white/85 text-sm md:text-base leading-relaxed break-words" style={{ padding: '1.2rem' }}>{project.description}</p>
+                </div>
+                
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Services Section */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+      <section id="services" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
         <div className="content-container">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -243,30 +447,30 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center text-spacing-extra-loose"
           >
-            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white text-spacing-loose leading-tight">
-              Cosmic Capabilities
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-loose leading-tight">
+              {lang === 'en' ? 'Cosmic Capabilities' : 'Capacidades Cósmicas'}
             </h2>
-            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/80 max-w-4xl mx-auto leading-relaxed font-light">
-              From nebula concepts to stellar deployments, we navigate the cosmos of code
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/80 max-w-4xl mx-auto leading-relaxed font-light">
+              {lang === 'en' ? 'From nebula concepts to stellar deployments, we navigate the cosmos of code' : 'Desde conceptos de nebulosa hasta despliegues estelares, navegamos el cosmos del código'}
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 xl:gap-12">
             {[
               {
+                icon: <Workflow className="w-8 h-8" />,
+                title: "Automations",
+                description: "Workflow automation and integrations that save time and reduce manual tasks"
+              },
+              {
+                icon: <Smartphone className="w-8 h-8" />,
+                title: "Mobile Apps",
+                description: "iOS and Android apps with smooth UX, performance, and modern tooling"
+              },
+              {
                 icon: <Code className="w-8 h-8" />,
-                title: "Galactic Development",
-                description: "Interstellar web applications engineered with quantum-level precision and cosmic technologies"
-              },
-              {
-                icon: <Sparkles className="w-8 h-8" />,
-                title: "Nebula Design",
-                description: "Breathtaking, cosmic interfaces that transport users through stellar user experiences"
-              },
-              {
-                icon: <Zap className="w-8 h-8" />,
-                title: "Warp Speed",
-                description: "Light-speed applications optimized for hyperdrive performance across the universe"
+                title: "Web Apps",
+                description: "Robust web applications engineered with scalable, maintainable architectures"
               }
             ].map((service, index) => (
               <motion.div
@@ -295,7 +499,7 @@ export default function Home() {
       </section>
 
       {/* About Section */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-10">
+      <section id="about" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
         <div className="content-container">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -304,37 +508,36 @@ export default function Home() {
             viewport={{ once: true }}
             className="glass-card card-padding-xl rounded-3xl mx-auto max-w-7xl"
           >
-            <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 xl:gap-24 items-center">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 xl:gap-14 items-center">
               <div className="text-center lg:text-left">
                 <motion.h2 
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white text-spacing-extra-loose leading-[1.1] tracking-tight"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-extra-loose leading-[1.1] tracking-tight"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
                   viewport={{ once: true }}
                 >
-                  <span className="block text-spacing-tight">Why Choose</span>
+                  <span className="block text-spacing-tight">{lang === 'en' ? 'Why Choose' : '¿Por qué elegir'}</span>
                   <span className="block bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 bg-clip-text text-transparent">
-                    Us?
+                    {lang === 'en' ? 'Us?' : 'nos?'}
                   </span>
                 </motion.h2>
                 
                 <motion.p 
-                  className="text-xl sm:text-2xl md:text-3xl text-white/85 text-spacing-extra-loose leading-[1.4] font-light max-w-2xl mx-auto lg:mx-0"
+                  className="text-sm sm:text-base md:text-lg text-white/85 text-spacing-relaxed leading-relaxed font-light max-w-2xl mx-auto lg:mx-0"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  <span className="block text-spacing-relaxed">With years of experience and a passion for innovation,</span>
-                  <span className="block">we transform your ideas into powerful digital solutions that drive growth.</span>
+                  <span className="block">{lang === 'en' ? 'We turn ideas into fast, scalable products that drive growth.' : 'Convertimos ideas en productos rápidos y escalables que impulsan el crecimiento.'}</span>
                 </motion.p>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 lg:gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
                     { icon: "🚀", title: "Expert Development Team", desc: "Seasoned professionals with cutting-edge expertise" },
                     { icon: "⚡", title: "Agile Project Management", desc: "Fast, flexible delivery with continuous collaboration" },
-                    { icon: "🛡️", title: "24/7 Support & Maintenance", desc: "Round-the-clock assistance and system optimization" },
+                    { icon: "🛡️", title: "pay when you are satisfied", desc: "Only pay when the delivered work meets your expectations" },
                     { icon: "📈", title: "Scalable Architecture", desc: "Future-ready solutions that grow with your business" }
                   ].map((feature, index) => (
                     <motion.div
@@ -343,17 +546,17 @@ export default function Home() {
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.15 }}
                       viewport={{ once: true }}
-                      className="feature-item group bg-gradient-to-r from-white/5 to-white/10 rounded-2xl card-padding-sm border border-white/10 hover:border-white/20 transition-all duration-300"
+                      className="feature-item group bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-200"
                     >
-                      <div className="flex items-start space-x-4 lg:justify-start justify-center lg:text-left text-center">
-                        <div className="text-3xl lg:text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                      <div className="flex items-start space-x-3 lg:justify-start justify-center lg:text-left text-center">
+                        <div className="text-2xl lg:text-3xl mb-1 group-hover:scale-110 transition-transform duration-300">
                           {feature.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg lg:text-xl font-semibold text-white mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
+                          <h3 className="text-base lg:text-lg font-semibold text-white mb-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
                             {feature.title}
                           </h3>
-                          <p className="text-white/70 text-sm lg:text-base leading-relaxed group-hover:text-white/80 transition-colors duration-300">
+                          <p className="text-white/70 text-xs lg:text-sm leading-relaxed group-hover:text-white/80 transition-colors duration-300">
                             {feature.desc}
                           </p>
                         </div>
@@ -364,7 +567,7 @@ export default function Home() {
               </div>
               <div className="relative flex justify-center lg:justify-end">
                 <motion.div 
-                  className="stat-card rounded-3xl p-12 lg:p-16 text-center max-w-md group"
+                  className="stat-card rounded-3xl p-8 lg:p-10 text-center max-w-md group overflow-hidden"
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   whileHover={{ scale: 1.05 }}
@@ -384,13 +587,13 @@ export default function Home() {
                   </div>
                   
                   <motion.h3 
-                    className="text-6xl lg:text-7xl xl:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 mb-6 lg:mb-8 leading-none"
+                    className="text-4xl lg:text-5xl xl:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 mb-2 lg:mb-3 leading-none"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.6 }}
                     viewport={{ once: true }}
                   >
-                    500+
+                    100%
                   </motion.h3>
                   
                   <motion.div
@@ -399,12 +602,11 @@ export default function Home() {
                     transition={{ duration: 0.8, delay: 0.8 }}
                     viewport={{ once: true }}
                   >
-                    <p className="text-xl lg:text-2xl font-semibold text-white/90 mb-3 group-hover:text-white transition-colors duration-300">
-                      Projects Delivered
+                    <p className="text-lg lg:text-xl font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300 break-words max-w-xs mx-auto">
+                      Client Satisfaction
                     </p>
-                    <p className="text-white/60 text-sm lg:text-base group-hover:text-white/70 transition-colors duration-300">
-                      Across global industries
-                    </p>
+                    <p className="text-right w-full">Guarantee</p>
+                    
                   </motion.div>
                 </motion.div>
               </div>
@@ -414,7 +616,7 @@ export default function Home() {
       </section>
 
       {/* Enhanced Contact Section */}
-      <section className="section-spacing relative flex items-center justify-center z-10" style={{ minHeight: '80vh' }}>
+      <section id="contact" className="section-spacing relative flex items-center justify-center z-10" style={{ minHeight: '80vh' }}>
         <div className="content-container">
           {/* Compact Hero Introduction */}
           <motion.div
@@ -425,22 +627,22 @@ export default function Home() {
             className="contact-hero text-center relative z-10"
           >
             <motion.h2 
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              Ready to Launch?
+              {lang === 'en' ? 'Ready to Launch?' : '¿Listo para despegar?'}
             </motion.h2>
             <motion.p 
-              className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed font-light"
+              className="text-base sm:text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed font-light"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              Transform your vision into stellar digital reality.
+              {lang === 'en' ? 'Transform your vision into stellar digital reality.' : 'Transforma tu visión en una realidad digital estelar.'}
             </motion.p>
 
             {/* Compact Trust Badges */}
@@ -453,20 +655,17 @@ export default function Home() {
             >
               <div className="trust-badge">
                 <Shield className="trust-badge-icon" />
-                <span>Confidential</span>
+                <span>{lang === 'en' ? 'Confidential' : 'Confidencial'}</span>
               </div>
               <div className="trust-badge">
                 <Clock className="trust-badge-icon" />
-                <span>24h Response</span>
+                <span>{lang === 'en' ? 'Pay When Satisfied' : 'Paga cuando estés satisfecho'}</span>
               </div>
-              <div className="trust-badge">
-                <CheckCircle className="trust-badge-icon" />
-                <span>500+ Projects</span>
-              </div>
+              {/* Removed misleading projects count */}
             </motion.div>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="grid lg:grid-cols-1 gap-8 lg:gap-12">
             {/* Compact Contact Form */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -483,10 +682,10 @@ export default function Home() {
                 className="mb-6"
               >
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                  Start Your Mission
+                  {lang === 'en' ? 'Start Your Mission' : 'Comienza tu misión'}
                 </h3>
                 <p className="text-white/80 leading-relaxed">
-                  Share your project details and let's bring your vision to life.
+                  Share your project details and let&apos;s bring your vision to life.
                 </p>
               </motion.div>
               
@@ -658,114 +857,9 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </motion.button>
               </form>
-              <pre>{JSON.stringify(formData, null, 2)}</pre>
             </motion.div>
 
-            {/* Compact Contact Info */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              viewport={{ once: true }}
-              className="contact-info-enhanced"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
-                viewport={{ once: true }}
-                className="mb-6"
-              >
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                  Let's Connect
-                </h3>
-                <p className="text-white/80 leading-relaxed">
-                  Choose your preferred way to reach us.
-                </p>
-              </motion.div>
-
-              <div className="space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.8 }}
-                  viewport={{ once: true }}
-                  className="contact-method group"
-                >
-                  <div className="contact-icon-enhanced">
-                    <Mail className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="text-lg font-bold text-white mb-1">Email Us</h4>
-                  <p className="text-white/70 mb-3 text-sm">
-                    24-hour response guarantee
-                  </p>
-                  <a 
-                    href="mailto:hello@lunalabs.com" 
-                    className="text-purple-300 hover:text-purple-200 transition-colors duration-300 font-semibold inline-flex items-center gap-2"
-                  >
-                    hello@lunalabs.com
-                    <ArrowDown className="w-3 h-3 rotate-[-45deg] group-hover:translate-x-1 group-hover:translate-y-[-1px] transition-transform duration-300" />
-                  </a>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.9 }}
-                  viewport={{ once: true }}
-                  className="contact-method group"
-                >
-                  <div className="contact-icon-enhanced">
-                    <MessageCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="text-lg font-bold text-white mb-1">Live Chat</h4>
-                  <p className="text-white/70 mb-3 text-sm">
-                    Instant answers during business hours
-                  </p>
-                  <div className="text-purple-300 font-semibold inline-flex items-center gap-2">
-                    9 AM - 6 PM EST
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 1 }}
-                  viewport={{ once: true }}
-                  className="contact-method group"
-                >
-                  <div className="contact-icon-enhanced">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="text-lg font-bold text-white mb-1">Free Consultation</h4>
-                  <p className="text-white/70 mb-3 text-sm">
-                    30-minute strategy call
-                  </p>
-                  <button className="text-purple-300 hover:text-purple-200 transition-colors duration-300 font-semibold inline-flex items-center gap-2 group/btn">
-                    Book Call
-                    <ArrowDown className="w-3 h-3 rotate-[-45deg] group-hover/btn:translate-x-1 group-hover/btn:translate-y-[-1px] transition-transform duration-300" />
-                  </button>
-                </motion.div>
-              </div>
-
-              {/* Compact Guarantee */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.1 }}
-                viewport={{ once: true }}
-                className="mt-6 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <h4 className="font-semibold text-white">24h Response Guarantee</h4>
-                </div>
-                <p className="text-green-200/80 text-sm leading-relaxed">
-                  Most inquiries receive a detailed reply within 4 hours.
-                </p>
-              </motion.div>
-            </motion.div>
+            {/* Contact Info column removed per request */}
           </div>
         </div>
       </section>
@@ -857,7 +951,7 @@ export default function Home() {
               </motion.div>
               
               <motion.h2 
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white text-spacing-loose leading-tight"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-loose leading-tight"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.3, ease: [0.25, 0.8, 0.25, 1] }}
@@ -866,23 +960,23 @@ export default function Home() {
                 Welcome to the Galaxy
               </motion.h2>
               <motion.p 
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white/90 text-spacing-relaxed leading-relaxed font-light"
+                className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 text-spacing-relaxed leading-relaxed font-light"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.6, ease: [0.25, 0.8, 0.25, 1] }}
                 viewport={{ once: true }}
               >
-                You've reached the heart of the cosmos
+                You&apos;ve reached the heart of the cosmos
               </motion.p>
               <motion.p 
-                className="text-lg sm:text-xl md:text-2xl text-white/70 text-spacing-extra-loose max-w-4xl mx-auto leading-relaxed font-light"
+                className="text-base sm:text-lg md:text-xl text-white/70 text-spacing-extra-loose max-w-4xl mx-auto leading-relaxed font-light"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.9, ease: [0.25, 0.8, 0.25, 1] }}
                 viewport={{ once: true }}
               >
                 From distant stars of innovation to the galactic core of implementation, 
-                let's launch your digital dreams into the infinite universe of possibilities.
+                let&apos;s launch your digital dreams into the infinite universe of possibilities.
               </motion.p>
               
               <motion.div 
@@ -892,7 +986,8 @@ export default function Home() {
                 transition={{ duration: 1.2, delay: 1.2, ease: [0.25, 0.8, 0.25, 1] }}
                 viewport={{ once: true }}
               >
-                <motion.button
+                <motion.a
+                  href="#contact"
                   className="btn-primary rounded-full text-white relative overflow-hidden group"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -903,8 +998,9 @@ export default function Home() {
                 >
                   <span className="relative z-10">Start Your Project</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.button>
-                <motion.button
+                </motion.a>
+                <motion.a
+                  href="#portfolio"
                   className="btn-secondary rounded-full text-white relative overflow-hidden group"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -915,7 +1011,7 @@ export default function Home() {
                 >
                   <span className="relative z-10">Explore Portfolio</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.button>
+                </motion.a>
               </motion.div>
               
               <motion.p 
