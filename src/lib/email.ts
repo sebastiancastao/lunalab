@@ -49,7 +49,7 @@ export const sendContactEmail = async (formData: ContactFormData): Promise<Email
       budget: formData.budget,
       project_type: formData.projectType,
       message: formData.message,
-      to_name: 'Luna Labs Team',
+      to_name: 'Luna Lab Team',
       reply_to: formData.email,
     };
 
@@ -87,10 +87,10 @@ export const sendAutoReply = async (userEmail: string, userName: string): Promis
     const autoReplyParams = {
       to_email: userEmail,
       to_name: userName,
-      from_name: 'Luna Labs Team',
+      from_name: 'Luna Lab Team',
       message: `Hi ${userName},
 
-Thank you for reaching out to Luna Labs! We've received your project inquiry and are excited to learn more about your vision.
+Thank you for reaching out to Luna Lab! We've received your project inquiry and are excited to learn more about your vision.
 
 What happens next:
 • Our team will review your project details within 4 hours
@@ -100,7 +100,7 @@ What happens next:
 In the meantime, feel free to check out our recent work and client testimonials on our website.
 
 Best regards,
-The Luna Labs Team
+The Luna Lab Team
 
 ---
 This is an automated response. Please don't reply to this email.

@@ -26,7 +26,7 @@ export const useContactForm = () => {
     currentUrl: typeof window !== "undefined" ? window.location.href : "",
     projectType: "",
     budget: "",
-    company: "Luna Labs",
+    company: "Luna Lab",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);

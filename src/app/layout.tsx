@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CodeCraft - Premier Software Agency",
-  description: "We are a premier software agency specializing in cutting-edge web applications, mobile solutions, and digital transformations that elevate your business.",
-  keywords: "software agency, web development, mobile apps, digital transformation, UI/UX design",
-  authors: [{ name: "CodeCraft Team" }],
+  title: "Luna Lab — Nearshore & AI Assistants",
+  description: "Luna Lab: nearshore software and AI assistants with code to implement AI in business processes.",
+  keywords: "luna lab, nearshore, software agency, ai assistants, web development, mobile apps, digital transformation, UI/UX design",
+  authors: [{ name: "Luna Lab" }],
   viewport: "width=device-width, initial-scale=1",
   openGraph: {
-    title: "CodeCraft - Premier Software Agency",
-    description: "Crafting digital excellence with cutting-edge technology solutions",
+    title: "Luna Lab — Nearshore & AI Assistants",
+    description: "Digital excellence with nearshore teams and practical AI assistants",
     type: "website",
   },
 };

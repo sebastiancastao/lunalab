@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, Code, Sparkles, Zap, Users, Star, Mail, Clock, Shield, CheckCircle, MessageCircle, Calendar, Rocket } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowDown, Code, Sparkles, Zap, Users, Mail, Clock, Shield, CheckCircle, MessageCircle, Calendar, Rocket } from 'lucide-react';
 import { sendContactEmail, type ContactFormData } from '../lib/email';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { scrollYProgress } = useScroll();
   
   // Contact form state
@@ -86,6 +87,13 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      const mq = window.matchMedia('(max-width: 768px)');
+      const update = () => setIsMobile(mq.matches);
+      update();
+      mq.addEventListener('change', update);
+      return () => mq.removeEventListener('change', update);
+    }
   }, []);
 
   if (!mounted) return null;
@@ -117,11 +125,14 @@ export default function Home() {
   ];
 
   return (
-    <div className="relative min-h-[500vh] overflow-hidden"
+    <div id="main" className="relative min-h-[500vh] overflow-hidden"
          style={{ 
            paddingTop: 'var(--spacing-5xl)',
            scrollPadding: 'var(--spacing-4xl)' 
          }}>
+      <a href="#services" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded">
+        Skip to content
+      </a>
       {/* Deep Space Background with Parallax */}
       <motion.div 
         style={{ y: skyY }}
@@ -184,7 +195,7 @@ export default function Home() {
       </motion.div>
 
       {/* Enhanced Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-nav">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-nav" role="navigation" aria-label="Primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -195,10 +206,19 @@ export default function Home() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-600 rounded-xl flex items-center justify-center">
-                <Star className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3">
+                <a
+                  href="#main"
+                  className="logo flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-md"
+                  aria-label="Luna Lab"
+                >
+                  <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="13" cy="13" r="9.5" stroke="#EAECEF" strokeWidth="2" />
+                    <circle cx="16" cy="10" r="8" fill="#0A0B10" />
+                  </svg>
+                  <span className="logo-text text-xl lg:text-2xl font-bold text-white tracking-tight">Luna Lab</span>
+                </a>
               </div>
-              <span className="text-xl lg:text-2xl font-bold text-white tracking-tight">Luna Labs</span>
             </motion.div>
 
             {/* Desktop Navigation */}
@@ -207,7 +227,7 @@ export default function Home() {
                 <motion.a 
                   key={item}
                   href={`#${item.toLowerCase()}`} 
-                  className="nav-link text-white/90 hover:text-white transition-all duration-300"
+                  className="nav-link text-white/90 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-md"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -219,7 +239,7 @@ export default function Home() {
               ))}
               <motion.a 
                 href="#contact"
-                className="nav-cta with-iris ml-4"
+                className="nav-cta ml-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
@@ -233,7 +253,10 @@ export default function Home() {
             {/* Mobile Menu Button */}
             <div className="lg:hidden">
               <motion.button 
-                className="nav-link p-2"
+                className="nav-link p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-md"
+                aria-label="Toggle menu"
+                aria-expanded={isMobileMenuOpen}
+                onClick={() => setIsMobileMenuOpen((v) => !v)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -247,6 +270,26 @@ export default function Home() {
           </div>
         </div>
       </nav>
+      {isMobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className="fixed top-[64px] left-0 right-0 z-50 px-4">
+            <div className="mobile-menu mx-2 p-3">
+              {['Services', 'About', 'Portfolio', 'Contact'].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  className="mobile-menu-item block"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item}
+                </a>
+              ))}
+              <a href="#contact" className="mobile-menu-item block" onClick={() => setIsMobileMenuOpen(false)}>Get Started</a>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Hero Section */}
       <section className="section-spacing relative min-h-screen flex items-center justify-center z-10">
@@ -347,7 +390,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="hero-card with-iris rounded-2xl overflow-hidden group flex flex-col"
+                className="hero-card with-iris rounded-[24px] overflow-hidden group flex flex-col"
                 onMouseMove={(e) => {
                   const t = e.currentTarget as HTMLDivElement;
                   const r = t.getBoundingClientRect();
@@ -357,19 +400,48 @@ export default function Home() {
                   t.style.setProperty('--y', `${y}%`);
                 }}
               >
-                <div className="relative h-56 md:h-64 overflow-hidden">
-                  {project.image ? (
-            <Image
-                      src={project.image}
-                      alt={project.title}
-                      fill
-                      sizes="(min-width: 1280px) 400px, 50vw"
-                      className="object-cover object-center opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-blue-500/30 to-indigo-500/30" />
-                  )}
-                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 35%)' }} />
+                <div className="relative h-56 md:h-64 overflow-hidden rounded-[24px] backdrop-blur-2xl saturate-150">
+                  {Array.from({ length: isMobile ? 6 : 9 }).map((_, i) => {
+                    const sizePercent = 100 - i * 7; // 100% down to ~44%
+                    const maxBlur = isMobile ? 120 : 200;
+                    const backdropBlur = Math.round(maxBlur - i * ((maxBlur - 10) / ((isMobile ? 6 : 9) - 1)));
+                    return (
+                      <div
+                        key={i}
+                        className="absolute left-1/2 top-1/2 rounded-[24px]"
+                        style={{
+                          width: `${sizePercent}%`,
+                          height: `${sizePercent}%`,
+                          transform: 'translate(-50%, -50%)',
+                          backdropFilter: `blur(${backdropBlur}px)`,
+                          WebkitBackdropFilter: `blur(${backdropBlur}px)`,
+                          filter: 'blur(4px)',
+                          background: 'rgba(255, 255, 255, 0.10)',
+                          zIndex: i + 1,
+                        }}
+                      />
+                    );
+                  })}
+                  <div
+                    className="absolute left-1/2 top-1/2 rounded-[24px] pointer-events-none"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      transform: 'translate(-50%, -50%)',
+                      background: 'rgba(255, 255, 255, 0.10)',
+                      boxShadow: 'inset 18px 18px 10px -20px #FFFFFF, inset -14px -14px 7px -12px #b3b3b3, 0 6px 24px rgba(0,0,0,.08)',
+                      zIndex: 20,
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 rounded-[24px] pointer-events-none"
+                    style={{
+                      background:
+                        'radial-gradient(120% 80% at 20% 10%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 60%)',
+                      mixBlendMode: 'screen',
+                      zIndex: 21,
+                    }}
+                  />
                 </div>
                 <div className="p-6 md:p-8">
                   <h3 className="text-xl md:text-2xl font-semibold text-white mb-2 animate-fade-up-minimal">{project.title}</h3>
@@ -465,12 +537,12 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
             viewport={{ once: true }}
-            className="glass-card card-padding-xl rounded-3xl mx-auto max-w-7xl"
+            className="glass-card card-padding-xl rounded-3xl mx-auto max-w-6xl"
           >
-            <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 xl:gap-24 items-center">
+            <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-10 items-center">
               <div className="text-center lg:text-left">
                 <motion.h2 
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white text-spacing-extra-loose leading-[1.1] tracking-tight"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-loose leading-tight tracking-tight"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
@@ -483,17 +555,16 @@ export default function Home() {
                 </motion.h2>
                 
                 <motion.p 
-                  className="text-xl sm:text-2xl md:text-3xl text-white/85 text-spacing-extra-loose leading-[1.4] font-light max-w-2xl mx-auto lg:mx-0"
+                  className="text-sm sm:text-base md:text-lg text-white/85 text-spacing-relaxed leading-relaxed font-light max-w-2xl mx-auto lg:mx-0"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  <span className="block text-spacing-relaxed">With years of experience and a passion for innovation,</span>
-                  <span className="block">we transform your ideas into powerful digital solutions that drive growth.</span>
+                  <span className="block">We turn ideas into fast, scalable products that drive growth.</span>
                 </motion.p>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 lg:gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     { icon: "🚀", title: "Expert Development Team", desc: "Seasoned professionals with cutting-edge expertise" },
                     { icon: "⚡", title: "Agile Project Management", desc: "Fast, flexible delivery with continuous collaboration" },
@@ -506,17 +577,17 @@ export default function Home() {
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.15 }}
                       viewport={{ once: true }}
-                      className="feature-item group bg-gradient-to-r from-white/5 to-white/10 rounded-2xl card-padding-sm border border-white/10 hover:border-white/20 transition-all duration-300"
+                      className="feature-item group bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-200"
                     >
-                      <div className="flex items-start space-x-4 lg:justify-start justify-center lg:text-left text-center">
-                        <div className="text-3xl lg:text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                      <div className="flex items-start space-x-3 lg:justify-start justify-center lg:text-left text-center">
+                        <div className="text-2xl lg:text-3xl mb-1 group-hover:scale-110 transition-transform duration-300">
                           {feature.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg lg:text-xl font-semibold text-white mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
+                          <h3 className="text-sm lg:text-base font-semibold text-white mb-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
                             {feature.title}
                           </h3>
-                          <p className="text-white/70 text-base lg:text-lg leading-relaxed group-hover:text-white/80 transition-colors duration-300">
+                          <p className="text-white/70 text-xs lg:text-sm leading-relaxed group-hover:text-white/80 transition-colors duration-300">
                             {feature.desc}
                           </p>
                         </div>
@@ -527,7 +598,7 @@ export default function Home() {
               </div>
               <div className="relative flex justify-center lg:justify-end">
                 <motion.div 
-                  className="stat-card with-iris rounded-3xl p-12 lg:p-16 text-center max-w-md group animate-fade-up-minimal"
+                  className="stat-card with-iris rounded-3xl p-8 lg:p-10 text-center max-w-md group animate-fade-up-minimal"
                   onMouseMove={(e) => {
                     const t = e.currentTarget as HTMLDivElement;
                     const r = t.getBoundingClientRect();
@@ -542,9 +613,9 @@ export default function Home() {
                   transition={{ duration: 0.8, delay: 0.4 }}
                   viewport={{ once: true }}
                 >
-                  <div className="relative mb-8 lg:mb-12">
-                    <div className="w-28 h-28 lg:w-32 lg:h-32 mx-auto rounded-full bg-gradient-to-br from-purple-400/40 to-blue-500/40 border-2 border-white/40 flex items-center justify-center group-hover:border-white/60 transition-all duration-500 group-hover:rotate-12">
-                      <Users className="w-14 h-14 lg:w-16 lg:h-16 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110" />
+                  <div className="relative mb-6 lg:mb-8">
+                    <div className="w-24 h-24 lg:w-28 lg:h-28 mx-auto rounded-full bg-gradient-to-br from-purple-400/40 to-blue-500/40 border-2 border-white/40 flex items-center justify-center group-hover:border-white/60 transition-all duration-500 group-hover:rotate-12">
+                      <Users className="w-12 h-12 lg:w-14 lg:h-14 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110" />
                     </div>
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400/15 to-blue-500/15 blur-2xl group-hover:blur-3xl transition-all duration-500 group-hover:scale-125"></div>
                     
@@ -555,7 +626,7 @@ export default function Home() {
                   </div>
                   
                   <motion.h3 
-                    className="text-6xl lg:text-7xl xl:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 mb-6 lg:mb-8 leading-none"
+                    className="text-4xl lg:text-5xl xl:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 mb-4 lg:mb-6 leading-none"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.6 }}
@@ -570,10 +641,10 @@ export default function Home() {
                     transition={{ duration: 0.8, delay: 0.8 }}
                     viewport={{ once: true }}
                   >
-                    <p className="text-xl lg:text-2xl font-semibold text-white/90 mb-3 group-hover:text-white transition-colors duration-300">
+                    <p className="text-lg lg:text-xl font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300">
                       Projects Delivered
                     </p>
-                    <p className="text-white/60 text-base lg:text-lg group-hover:text-white/70 transition-colors duration-300">
+                    <p className="text-white/60 text-sm lg:text-base group-hover:text-white/70 transition-colors duration-300">
                       Across global industries
                     </p>
                   </motion.div>
@@ -1011,111 +1082,7 @@ export default function Home() {
           />
         </motion.div>
       </div>
-
-      {/* Galaxy Footer - Final destination */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-20" 
-               style={{ marginTop: '20vh' }}>
-        <div className="content-container">
-          <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ 
-              duration: 1.5, 
-              ease: [0.25, 0.8, 0.25, 1],
-              opacity: { duration: 2 }
-            }}
-            viewport={{ once: true, margin: "-200px" }}
-            className="hero-card card-padding-xl rounded-3xl mx-auto max-w-6xl text-center relative"
-          >
-            {/* Cosmic galaxy atmosphere overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 via-indigo-600/10 to-transparent rounded-3xl"></div>
-            
-            <div className="relative z-10">
-              <motion.div
-                initial={{ scale: 0.8 }}
-                whileInView={{ scale: 1 }}
-                transition={{ duration: 0.8 }}
-                className="mb-12"
-              >
-                <div className="w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-purple-400 via-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <Star className="w-12 h-12 text-white" />
-                </div>
-              </motion.div>
-              
-              <motion.h2 
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white text-spacing-loose leading-tight"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.3, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                Welcome to the Galaxy
-              </motion.h2>
-              <motion.p 
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white/90 text-spacing-relaxed leading-relaxed font-light"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.6, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                You&#39;ve reached the heart of the cosmos
-              </motion.p>
-              <motion.p 
-                className="text-lg sm:text-xl md:text-2xl text-white/70 text-spacing-extra-loose max-w-4xl mx-auto leading-relaxed font-light"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.9, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                From distant stars of innovation to the galactic core of implementation, 
-                let&#39;s launch your digital dreams into the infinite universe of possibilities.
-              </motion.p>
-              
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-8 justify-center items-center"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 1.2, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                <motion.button
-                  className="btn-primary rounded-full text-white relative overflow-hidden group"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 1.4 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="relative z-10">Start Your Project</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.button>
-                <motion.button
-                  className="btn-secondary rounded-full text-white relative overflow-hidden group"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 1.6 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="relative z-10">Explore Portfolio</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.button>
-              </motion.div>
-              
-              <motion.p 
-                className="text-sm text-white/50 mt-16"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-              >
-                © 2024 Luna Labs. Exploring digital frontiers across the cosmos.
-              </motion.p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      
     </div>
   );
 }
