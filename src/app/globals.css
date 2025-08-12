@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  
   
   /* Enhanced Spacing System */
   --spacing-xs: 0.5rem;    /* 8px */
