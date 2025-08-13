@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, Code, Users, Star, Mail, Clock, Shield, CheckCircle, Rocket, Smartphone, Workflow } from 'lucide-react';
+import { ArrowDown, Code, Users, Mail, Clock, Shield, CheckCircle, Rocket, Smartphone, Workflow } from 'lucide-react';
 import Image from 'next/image';
 import { useContactForm } from '@/hooks/useContactForm';
 
@@ -920,112 +920,7 @@ export default function Home() {
         </motion.div>
       </div>
 
-      {/* Galaxy Footer - Final destination */}
-      <section className="section-spacing relative min-h-screen flex items-center justify-center z-20" 
-               style={{ marginTop: '20vh' }}>
-        <div className="content-container">
-          <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ 
-              duration: 1.5, 
-              ease: [0.25, 0.8, 0.25, 1],
-              opacity: { duration: 2 }
-            }}
-            viewport={{ once: true, margin: "-200px" }}
-            className="hero-card card-padding-xl rounded-3xl mx-auto max-w-6xl text-center relative"
-          >
-            {/* Cosmic galaxy atmosphere overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 via-indigo-600/10 to-transparent rounded-3xl"></div>
-            
-            <div className="relative z-10">
-              <motion.div
-                initial={{ scale: 0.8 }}
-                whileInView={{ scale: 1 }}
-                transition={{ duration: 0.8 }}
-                className="mb-12"
-              >
-                <div className="w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-purple-400 via-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <Star className="w-12 h-12 text-white" />
-                </div>
-              </motion.div>
-              
-              <motion.h2 
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-loose leading-tight"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.3, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                Welcome to the Galaxy
-              </motion.h2>
-              <motion.p 
-                className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 text-spacing-relaxed leading-relaxed font-light"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.6, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                You&apos;ve reached the heart of the cosmos
-              </motion.p>
-              <motion.p 
-                className="text-base sm:text-lg md:text-xl text-white/70 text-spacing-extra-loose max-w-4xl mx-auto leading-relaxed font-light"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.9, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                From distant stars of innovation to the galactic core of implementation, 
-                let&apos;s launch your digital dreams into the infinite universe of possibilities.
-              </motion.p>
-              
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-8 justify-center items-center"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 1.2, ease: [0.25, 0.8, 0.25, 1] }}
-                viewport={{ once: true }}
-              >
-                <motion.a
-                  href="#contact"
-                  className="btn-primary rounded-full text-white relative overflow-hidden group"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 1.4 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="relative z-10">Start Your Project</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.a>
-                <motion.a
-                  href="#portfolio"
-                  className="btn-secondary rounded-full text-white relative overflow-hidden group"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 1.6 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="relative z-10">Explore Portfolio</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.a>
-              </motion.div>
-              
-              <motion.p 
-                className="text-sm text-white/50 mt-16"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-              >
-                © 2024 Luna Labs. Exploring digital frontiers across the cosmos.
-              </motion.p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* Galaxy Footer section removed by request */}
     </div>
   );
 }

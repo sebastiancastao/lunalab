@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CodeCraft - Premier Software Agency",
+  title: "LunaLab - Premier Software Agency",
   description: "We are a premier software agency specializing in cutting-edge web applications, mobile solutions, and digital transformations that elevate your business.",
   keywords: "software agency, web development, mobile apps, digital transformation, UI/UX design",
-  authors: [{ name: "CodeCraft Team" }],
+  authors: [{ name: "LunaLab Team" }],
   viewport: "width=device-width, initial-scale=1",
   openGraph: {
-    title: "CodeCraft - Premier Software Agency",
+    title: "LunaLab - Premier Software Agency",
     description: "Crafting digital excellence with cutting-edge technology solutions",
     type: "website",
   },
