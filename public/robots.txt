@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://lunalab.vercel.app/sitemap.xml
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Block access to admin or sensitive areas (if any in the future)
+# User-agent: *
+# Disallow: /admin/
+# Disallow: /private/
+
+# Allow access to CSS and JS files for proper rendering
+User-agent: *
+Allow: /_next/static/
+Allow: /favicon.ico
+Allow: /images/
+Allow: /assets/
