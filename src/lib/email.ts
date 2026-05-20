@@ -1,119 +1,96 @@
-import emailjs from '@emailjs/browser';
+import "server-only";
 
-// EmailJS configuration
-const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || '';
-const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || '';
-const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
+import { Resend } from "resend";
 
-// Initialize EmailJS
-emailjs.init(EMAILJS_PUBLIC_KEY);
-
-export interface ContactFormData {
+export interface ContactEmailPayload {
   name: string;
   email: string;
-  budget: string;
-  projectType: string;
   message: string;
-  company?: string;
+  subject?: string;
+  budget?: string;
+  projectType?: string;
+  currentUrl?: string;
 }
 
-export interface EmailResponse {
-  success: boolean;
-  message: string;
-}
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
-export const sendContactEmail = async (formData: ContactFormData): Promise<EmailResponse> => {
-  try {
-    // Validate required fields
-    if (!formData.name || !formData.email || !formData.message) {
-      return {
-        success: false,
-        message: 'Please fill in all required fields.'
-      };
-    }
+const formatMessageHtml = (message: string) => escapeHtml(message).replace(/\n/g, "<br />");
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      return {
-        success: false,
-        message: 'Please enter a valid email address.'
-      };
-    }
+const buildOptionalText = (label: string, value?: string) =>
+  value ? `${label}: ${value}` : `${label}: Not provided`;
 
-    // Prepare email template parameters
-    const templateParams = {
-      from_name: formData.name,
-      from_email: formData.email,
-      company: formData.company || 'Not specified',
-      budget: formData.budget,
-      project_type: formData.projectType,
-      message: formData.message,
-      to_name: 'Luna Labs Team',
-      reply_to: formData.email,
-    };
+const buildOptionalRow = (label: string, value?: string) => `
+  <tr>
+    <td style="padding:8px 0;font-weight:600;vertical-align:top;">${escapeHtml(label)}</td>
+    <td style="padding:8px 0;">${escapeHtml(value || "Not provided")}</td>
+  </tr>
+`;
 
-    // Send email via EmailJS
-    const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      templateParams
+const getResendConfig = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
+  const toEmail = process.env.CONTACT_TO_EMAIL;
+
+  if (!apiKey || !fromEmail || !toEmail) {
+    throw new Error(
+      "Missing Resend configuration. Expected RESEND_API_KEY, RESEND_FROM_EMAIL, and CONTACT_TO_EMAIL.",
     );
-
-    if (response.status === 200) {
-      return {
-        success: true,
-        message: 'Thank you! Your message has been sent successfully. We\'ll respond within 24 hours.'
-      };
-          } else {
-        return {
-          success: false,
-          message: 'Something went wrong. Please try again or contact us directly at hello@lunalabs.com'
-        };
-      }
-
-  } catch (error) {
-    console.error('Email sending error:', error);
-    return {
-      success: false,
-      message: 'Failed to send message. Please try again or contact us directly at hello@lunalabs.com'
-    };
   }
+
+  return { apiKey, fromEmail, toEmail };
 };
 
-// Auto-reply email to the user
-export const sendAutoReply = async (userEmail: string, userName: string): Promise<void> => {
-  try {
-    const autoReplyParams = {
-      to_email: userEmail,
-      to_name: userName,
-      from_name: 'Luna Labs Team',
-      message: `Hi ${userName},
+export const sendContactEmail = async (payload: ContactEmailPayload) => {
+  const { apiKey, fromEmail, toEmail } = getResendConfig();
+  const resend = new Resend(apiKey);
+  const subject = payload.subject?.trim()
+    ? `[Luna Lab] ${payload.subject.trim()} - ${payload.name}`
+    : `[Luna Lab] New contact form submission from ${payload.name}`;
 
-Thank you for reaching out to Luna Labs! We've received your project inquiry and are excited to learn more about your vision.
+  const { data, error } = await resend.emails.send({
+    from: fromEmail,
+    to: [toEmail],
+    subject,
+    replyTo: payload.email,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;">
+        <h2 style="margin-bottom:16px;">New contact form submission</h2>
+        <table style="border-collapse:collapse;">
+          ${buildOptionalRow("Name", payload.name)}
+          ${buildOptionalRow("Email", payload.email)}
+          ${buildOptionalRow("Project type", payload.projectType)}
+          ${buildOptionalRow("Budget", payload.budget)}
+          ${buildOptionalRow("Page URL", payload.currentUrl)}
+        </table>
+        <div style="margin-top:24px;">
+          <h3 style="margin-bottom:8px;">Message</h3>
+          <p style="margin:0;">${formatMessageHtml(payload.message)}</p>
+        </div>
+      </div>
+    `,
+    text: [
+      "New contact form submission",
+      "",
+      buildOptionalText("Name", payload.name),
+      buildOptionalText("Email", payload.email),
+      buildOptionalText("Project type", payload.projectType),
+      buildOptionalText("Budget", payload.budget),
+      buildOptionalText("Page URL", payload.currentUrl),
+      "",
+      "Message:",
+      payload.message,
+    ].join("\n"),
+  });
 
-What happens next:
-• Our team will review your project details within 4 hours
-• We'll prepare a personalized response with next steps
-• You'll hear back from us within 24 hours maximum
-
-In the meantime, feel free to check out our recent work and client testimonials on our website.
-
-Best regards,
-The Luna Labs Team
-
----
-This is an automated response. Please don't reply to this email.
-For urgent matters, contact us directly at hello@lunalabs.com`
-    };
-
-    await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      'template_auto_reply', // You'll need to create this template
-      autoReplyParams
-    );
-  } catch (error) {
-    console.error('Auto-reply sending error:', error);
-    // Don't throw error for auto-reply failure
+  if (error) {
+    throw new Error(error.message || "Resend failed to send the email.");
   }
+
+  return data;
 };

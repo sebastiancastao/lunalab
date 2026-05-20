@@ -1,4 +1,3 @@
-import { baseUrl } from "@/config/constants";
 import { useState } from "react";
 
 export type ContactFormData = {
@@ -9,7 +8,6 @@ export type ContactFormData = {
   currentUrl: string;
   projectType: string;
   budget?: string;
-  company?: string;
 };
 
 type SubmitStatus = {
@@ -17,25 +15,27 @@ type SubmitStatus = {
   message: string;
 };
 
-export const useContactForm = () => {
-  const [formData, setFormData] = useState<ContactFormData>({
-    name: "",
-    email: "",
-    subject: "Consulta general",
-    message: "Project Details",
-    currentUrl: typeof window !== "undefined" ? window.location.href : "",
-    projectType: "",
-    budget: "",
-    company: "Luna Labs",
-  });
+const createInitialFormData = (): ContactFormData => ({
+  name: "",
+  email: "",
+  subject: "Website contact form",
+  message: "",
+  currentUrl: typeof window !== "undefined" ? window.location.href : "",
+  projectType: "",
+  budget: "",
+});
 
+export const useContactForm = () => {
+  const [formData, setFormData] = useState<ContactFormData>(createInitialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>({
     type: null,
     message: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -49,26 +49,17 @@ export const useContactForm = () => {
     setSubmitStatus({ type: null, message: "" });
 
     try {
-      // Construir el mensaje combinado
-      const combinedMessage = `
-${formData.message}
-
------------------------------
-🔹 Empresa: ${formData.company || "N/A"}
-🔹 Tipo de proyecto: ${formData.projectType || "N/A"}
-🔹 Presupuesto: ${formData.budget || "N/A"}
------------------------------
-`;
-
       const payload = {
         name: formData.name,
         email: formData.email,
         subject: formData.subject,
-        message: combinedMessage.trim(),
+        message: formData.message,
         currentUrl: formData.currentUrl,
+        projectType: formData.projectType,
+        budget: formData.budget,
       };
 
-      const res = await fetch(baseUrl + "/api/email/submit", {
+      const res = await fetch("/api/email/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,26 +71,17 @@ ${formData.message}
 
       if (res.ok && result.success) {
         setSubmitStatus({ type: "success", message: result.message });
-        setFormData({
-          name: "",
-          email: "",
-          subject: "",
-          message: "",
-          currentUrl: window.location.href,
-          projectType: "",
-          budget: "",
-          company: "",
-        });
+        setFormData(createInitialFormData());
       } else {
         setSubmitStatus({
           type: "error",
           message: result.message || "Error al enviar el formulario",
         });
       }
-    } catch (error) {
+    } catch {
       setSubmitStatus({
         type: "error",
-        message: "Hubo un error. Intenta nuevamente más tarde.",
+        message: "There was an error sending your message. Please try again later.",
       });
     } finally {
       setIsSubmitting(false);
