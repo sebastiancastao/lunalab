@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "WebFetch(domain:api.anthropic.com)",
+      "PowerShell($file = \"C:\\\\Users\\\\sebas\\\\.claude\\\\projects\\\\c--Users-sebas-OneDrive-Escritorio-lunalab---copia\\\\345b5d0c-54ef-4a80-808c-bf79340047ee\\\\tool-results\\\\webfetch-1779659501250-rhw6w5.bin\"; $outFile = \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\design_extracted.html\"; $inputStream = [System.IO.File]::OpenRead\\($file\\); $gzipStream = New-Object System.IO.Compression.GZipStream\\($inputStream, [System.IO.Compression.CompressionMode]::Decompress\\); $outputStream = [System.IO.File]::Create\\($outFile\\); $gzipStream.CopyTo\\($outputStream\\); $outputStream.Close\\(\\); $gzipStream.Close\\(\\); $inputStream.Close\\(\\); Write-Output \"Done. File size: $\\(\\(Get-Item $outFile\\).Length\\) bytes\")",
+      "Read(//c/Users/sebas/AppData/Local/Temp/**)",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\design_extracted.html\" -Raw; $idx = $content.IndexOf\\(\"luna-lab/project/index.html\"\\); Write-Output \"Found at char index: $idx\"; Write-Output \"Context: $\\($content.Substring\\($idx, 200\\)\\)\")",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\design_extracted.html\" -Raw; $lines = $content -split \"`n\"; for \\($i = 0; $i -lt $lines.Length; $i++\\) { if \\($lines[$i] -match \"luna-lab/project/index\\\\.html\\\\s+\\\\d{7}\"\\) { Write-Output \"Line $\\($i+1\\): $\\($lines[$i]\\)\"; break } })",
+      "PowerShell($outDir = \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\design_bundle2\"; New-Item -ItemType Directory -Force -Path $outDir | Out-Null; $binFile = \"C:\\\\Users\\\\sebas\\\\.claude\\\\projects\\\\c--Users-sebas-OneDrive-Escritorio-lunalab---copia\\\\345b5d0c-54ef-4a80-808c-bf79340047ee\\\\tool-results\\\\webfetch-1779659501250-rhw6w5.bin\"; tar -xzf \"$binFile\" -C \"$outDir\"; Get-ChildItem -Recurse -File \"$outDir\" | ForEach-Object { $_.FullName })",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\.next\\\\static\\\\development\")",
+      "PowerShell(Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\.next\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\.next-lunalab\" -ErrorAction SilentlyContinue; Write-Output \"Cleared\"; $resolved = [System.IO.Path]::GetFullPath\\(\"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\..\\\\..\\\\..\\\\..next-lunalab\"\\); Write-Output \"Will write to: $resolved\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\sebas"
+    ]
+  }
+}

@@ -1,926 +1,1063 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, Code, Users, Mail, Clock, Shield, CheckCircle, Rocket, Smartphone, Workflow } from 'lucide-react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { Shield, Clock, CheckCircle, Mail, Rocket } from 'lucide-react';
 import Image from 'next/image';
 import { useContactForm } from '@/hooks/useContactForm';
 
+// ─── Design tokens ────────────────────────────────────────────
+const ECL = {
+  bg: '#050507',
+  ink: '#f2f1ee',
+  mute: 'rgba(242,241,238,0.55)',
+  faint: 'rgba(242,241,238,0.18)',
+  hair: 'rgba(242,241,238,0.10)',
+  accent: '#a06bff',
+};
+
+const SERIF = 'var(--font-serif), Georgia, serif';
+const SANS  = 'var(--font-sans), system-ui, sans-serif';
+const MONO  = 'var(--font-mono), ui-monospace, monospace';
+
+// ─── Seeded RNG (stable starfield) ───────────────────────────
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ─── Shared UI atoms ─────────────────────────────────────────
+function CrescentMark({ size = 28, color = ECL.ink }: { size?: number; color?: string }) {
+  const id = `cm-${size}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-label="Luna Lab" style={{ display: 'block', flexShrink: 0 }}>
+      <defs>
+        <mask id={id}>
+          <rect width="32" height="32" fill="black" />
+          <circle cx="16" cy="16" r="13" fill="white" />
+          <circle cx="22" cy="13" r="11.5" fill="black" />
+        </mask>
+      </defs>
+      <rect width="32" height="32" fill={color} mask={`url(#${id})`} />
+    </svg>
+  );
+}
+
+function MonoLabel({
+  children,
+  color = ECL.mute,
+  size = 11,
+}: {
+  children: React.ReactNode;
+  color?: string;
+  size?: number;
+}) {
+  return (
+    <span
+      style={{
+        fontFamily: MONO,
+        fontSize: size,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        color,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Starfield({ count = 200 }: { count?: number }) {
+  const stars = useMemo(() => {
+    const rng = mulberry32(17);
+    return Array.from({ length: count }, () => ({
+      cx: `${rng() * 100}%`,
+      cy: `${rng() * 100}%`,
+      r: 0.4 + rng() * 1.3,
+      o: 0.1 + rng() * 0.65,
+      dur: `${2 + rng() * 5}s`,
+    }));
+  }, [count]);
+
+  return (
+    <svg
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+      aria-hidden="true"
+    >
+      {stars.map((s, i) => (
+        <circle key={i} cx={s.cx} cy={s.cy} r={s.r} fill="white" opacity={s.o}>
+          <animate
+            attributeName="opacity"
+            values={`${s.o};${(s.o * 0.2).toFixed(2)};${s.o}`}
+            dur={s.dur}
+            repeatCount="indefinite"
+          />
+        </circle>
+      ))}
+    </svg>
+  );
+}
+
+function MissionClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const hh = String(now.getUTCHours()).padStart(2, '0');
+  const mm = String(now.getUTCMinutes()).padStart(2, '0');
+  const ss = String(now.getUTCSeconds()).padStart(2, '0');
+  return <MonoLabel color={ECL.mute}>{hh}:{mm}:{ss} UTC</MonoLabel>;
+}
+
+// ─── Service cell ─────────────────────────────────────────────
+interface ServiceItem {
+  idx: string;
+  title: string;
+  tag: string;
+  body: string;
+  stack: string;
+}
+
+function ServiceCell({ s, borderRight }: { s: ServiceItem; borderRight: boolean }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        padding: 'clamp(24px, 3vw, 40px) clamp(18px, 2.5vw, 32px)',
+        borderRight: borderRight ? `1px solid ${ECL.hair}` : 'none',
+        transition: 'background 350ms ease',
+        background: hover ? 'rgba(160,107,255,0.04)' : 'transparent',
+        minHeight: 300,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <MonoLabel color={ECL.accent}>{s.idx}</MonoLabel>
+        <MonoLabel color={ECL.faint}>{s.tag}</MonoLabel>
+      </div>
+      <h3
+        style={{
+          margin: 'clamp(28px, 4vw, 56px) 0 0',
+          fontFamily: SERIF,
+          fontWeight: 400,
+          fontSize: 'clamp(22px, 2.5vw, 36px)',
+          lineHeight: 1.05,
+          letterSpacing: '-0.015em',
+          color: ECL.ink,
+        }}
+      >
+        <em style={{ fontStyle: 'italic' }}>{s.title}</em>
+      </h3>
+      <p style={{ margin: '14px 0 0', color: ECL.mute, fontFamily: SANS, fontSize: 15, lineHeight: 1.55 }}>
+        {s.body}
+      </p>
+      <div style={{ flex: 1 }} />
+      <div
+        style={{
+          marginTop: 22,
+          paddingTop: 16,
+          borderTop: `1px solid ${ECL.hair}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <MonoLabel color={ECL.mute}>{s.stack}</MonoLabel>
+        <span
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            border: `1px solid ${hover ? ECL.accent : ECL.faint}`,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: hover ? ECL.accent : ECL.mute,
+            transition: 'all 250ms ease',
+            transform: hover ? 'translateX(4px)' : 'none',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 5h8M6 2l3 3-3 3" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Work card ────────────────────────────────────────────────
+interface WorkProject {
+  idx: string;
+  client: string;
+  kind: string;
+  title: string;
+  hint: string;
+  result: string;
+  year: string;
+  color: string;
+  image?: string;
+  video?: string;
+  poster?: string;
+}
+
+function WorkCard({ project: p, tall }: { project: WorkProject; tall: boolean }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: 'relative',
+        height: tall ? 380 : 300,
+        overflow: 'hidden',
+        border: `1px solid ${ECL.hair}`,
+        borderRadius: 4,
+        cursor: 'pointer',
+      }}
+    >
+      {/* Media */}
+      {p.video ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster={p.poster ? encodeURI(p.poster) : undefined}
+          src={encodeURI(p.video)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: 0.55,
+            transition: 'transform 700ms cubic-bezier(.2,.7,.3,1)',
+            transform: hover ? 'scale(1.04)' : 'scale(1)',
+          }}
+        />
+      ) : p.image ? (
+        <Image
+          src={p.image}
+          alt={p.client}
+          fill
+          sizes="100vw"
+          style={{
+            objectFit: 'cover',
+            opacity: 0.55,
+            transition: 'transform 700ms cubic-bezier(.2,.7,.3,1)',
+            transform: hover ? 'scale(1.04)' : 'scale(1)',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: `repeating-linear-gradient(135deg, ${p.color}22 0 14px, ${p.color}11 14px 28px), #0a0a0e`,
+            transition: 'transform 700ms cubic-bezier(.2,.7,.3,1)',
+            transform: hover ? 'scale(1.04)' : 'scale(1)',
+          }}
+        />
+      )}
+      {/* Color gradient overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `linear-gradient(120deg, ${p.color}55 0%, rgba(5,5,7,0.1) 50%, rgba(5,5,7,0.88) 100%)`,
+        }}
+      />
+
+      {/* Top row */}
+      <div style={{ position: 'absolute', left: 28, top: 28, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <MonoLabel color={ECL.ink}>{p.idx}</MonoLabel>
+        <span style={{ width: 20, height: 1, background: ECL.faint }} />
+        <MonoLabel color={ECL.mute}>{p.kind}</MonoLabel>
+      </div>
+      <div style={{ position: 'absolute', right: 28, top: 28 }}>
+        <MonoLabel color={ECL.mute}>{p.year}</MonoLabel>
+      </div>
+
+      {/* Default: client name */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 28,
+          right: 28,
+          bottom: 28,
+          transition: 'transform 400ms ease, opacity 400ms ease',
+          transform: hover ? 'translateY(-90px)' : 'translateY(0)',
+          opacity: hover ? 0 : 1,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: SERIF,
+            fontStyle: 'italic',
+            fontSize: 'clamp(28px, 3.8vw, 52px)',
+            lineHeight: 1,
+            letterSpacing: '-0.015em',
+            color: ECL.ink,
+          }}
+        >
+          {p.client}
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <MonoLabel color={ECL.mute} size={10}>Hover to reveal →</MonoLabel>
+        </div>
+      </div>
+
+      {/* Hover reveal */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 28,
+          right: 28,
+          bottom: 28,
+          opacity: hover ? 1 : 0,
+          transform: hover ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'opacity 350ms ease, transform 350ms ease',
+        }}
+      >
+        <div
+          style={{
+            fontFamily: SERIF,
+            fontSize: 'clamp(20px, 2.8vw, 38px)',
+            lineHeight: 1.1,
+            letterSpacing: '-0.015em',
+            maxWidth: 700,
+            color: ECL.ink,
+          }}
+        >
+          {p.title}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            marginTop: 14,
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <div style={{ color: ECL.mute, fontFamily: SANS, fontSize: 14, maxWidth: 500, lineHeight: 1.45 }}>
+            {p.hint}
+          </div>
+          <MonoLabel color={ECL.accent} size={11}>{p.result}</MonoLabel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────
 export default function Home() {
+  const [lang, setLang] = useState<'en' | 'es'>('en');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [cursor, setCursor] = useState({ x: 0, y: 0, inside: false });
+  const heroRef = useRef<HTMLElement>(null);
   const [mounted, setMounted] = useState(false);
-  const { scrollYProgress } = useScroll();
-  const [lang, setLang] = useState<'en' | 'es'>(() => {
-    if (typeof window === 'undefined') return 'en';
-    return (localStorage.getItem('lang') as 'en' | 'es') || 'en';
-  });
-
-  const t = lang === 'en'
-    ? {
-        services: 'Services',
-        about: 'About',
-        portfolio: 'Portfolio',
-        contact: 'Contact',
-        getStarted: 'Get Started',
-        startProject: 'Start Your Project',
-        viewWork: 'View Our Work',
-      }
-    : {
-        services: 'Servicios',
-        about: 'Acerca',
-        portfolio: 'Portafolio',
-        contact: 'Contacto',
-        getStarted: 'Comenzar',
-        startProject: 'Inicia tu proyecto',
-        viewWork: 'Ver nuestro trabajo',
-      };
-
-  const navLinks = [
-    { id: 'services', label: t.services },
-    { id: 'about', label: t.about },
-    { id: 'portfolio', label: t.portfolio },
-    { id: 'contact', label: t.contact },
-  ];
-
-  // Parallax transforms
-  const skyY = useTransform(scrollYProgress, [0, 1], ['0%', '-30%']);
-  const starLayer1Y = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
-  const starLayer2Y = useTransform(scrollYProgress, [0, 1], ['0%', '75%']);
-  const starLayer3Y = useTransform(scrollYProgress, [0, 1], ['0%', '90%']);
-  const starLayer4Y = useTransform(scrollYProgress, [0, 1], ['0%', '95%']);
-  const galaxyY = useTransform(scrollYProgress, [0.7, 1], ['100%', '0%']);
-  const nebulaY = useTransform(scrollYProgress, [0, 1], ['100%', '200%']);
-  const transitionOpacity = useTransform(scrollYProgress, [0.6, 0.8], [0, 1]);
-
-  // Contact form hook
-  const {
-    formData,
-    isSubmitting,
-    submitStatus,
-    handleInputChange,
-    handleSubmit
-  } = useContactForm();
+  const { formData, isSubmitting, submitStatus, handleInputChange, handleSubmit } = useContactForm();
 
   useEffect(() => {
     setMounted(true);
-    try { localStorage.setItem('lang', lang); } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    try {
+      const s = localStorage.getItem('lang');
+      if (s === 'es') setLang('es');
+    } catch {}
   }, []);
 
   useEffect(() => {
     try { localStorage.setItem('lang', lang); } catch {}
   }, [lang]);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const el = heroRef.current;
+    if (!el) return;
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      setCursor({ x: e.clientX - r.left, y: e.clientY - r.top, inside: true });
+    };
+    const onLeave = () => setCursor((p) => ({ ...p, inside: false }));
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+    return () => {
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
+    };
+  }, [mounted]);
+
   if (!mounted) return null;
 
-  // Portfolio projects
-  const projects: Array<{
-    title: string;
-    description: string;
-    image?: string;
-    video?: string;
-    poster?: string;
-    href?: string;
-  }> = [
+  const en = lang === 'en';
+
+  const navItems = [
+    { id: 'work',     label: en ? 'Work'    : 'Trabajo'   },
+    { id: 'services', label: en ? 'Services': 'Servicios' },
+    { id: 'process',  label: en ? 'Process' : 'Proceso'   },
+    { id: 'contact',  label: en ? 'Contact' : 'Contacto'  },
+  ];
+
+  const projects: WorkProject[] = [
     {
-      title: 'AI productivity app',
-      description: 'AI productivity app featuring AI chatbots, auto-scheduling, and Google Calendar integration.',
+      idx: 'W-01', client: 'AI Productivity App',
+      kind: en ? 'Web app · Productivity' : 'App web · Productividad',
+      title: en ? 'AI chatbots, auto-scheduling and Calendar integration.' : 'Chatbots IA, programación automática e integración Calendar.',
+      hint: en ? 'AI productivity app featuring AI chatbots, auto-scheduling, and Google Calendar integration.' : 'App de productividad con chatbots IA, auto-programación e integración con Google Calendar.',
+      result: 'AI · Automation', year: '2025', color: '#4f35a0',
       video: '/Grabación 2025-06-05 082816.mp4',
       poster: '/Captura de pantalla 2025-06-19 182335.png',
-      href: '#contact'
     },
     {
-      title: 'Realstate Platform with AI',
-      description: 'Platform that uses AI to rate the environment of a property to assure quality of living—evaluating security, entertainment, nature, and traffic.',
+      idx: 'W-02', client: 'Real Estate AI',
+      kind: en ? 'Web app · Real estate' : 'App web · Inmobiliaria',
+      title: en ? 'AI-rated properties for quality of living.' : 'Propiedades evaluadas con IA para calidad de vida.',
+      hint: en ? 'Platform that uses AI to rate the environment of a property — security, entertainment, nature, and traffic.' : 'Plataforma que usa IA para evaluar el entorno de propiedades: seguridad, entretenimiento, naturaleza y tráfico.',
+      result: en ? 'AI · Real estate' : 'IA · Inmobiliaria', year: '2024', color: '#1e5cab',
       image: '/Captura de pantalla 2024-08-27 144922.png',
-      href: '#contact'
     },
     {
-      title: 'Transpaservic Mobile & Dispatch',
-      description: 'Mobile-first operations dashboard for transport services: order scanning, approval flow, and ticket generation integrated with driver operations.',
+      idx: 'W-03', client: 'Transpaservic',
+      kind: en ? 'Mobile · Operations' : 'Móvil · Operaciones',
+      title: en ? 'Mobile-first dispatch for transport teams.' : 'Despacho mobile-first para transporte.',
+      hint: en ? 'Mobile-first operations dashboard: scanning, approvals, and ticket generation integrated with driver ops.' : 'Dashboard móvil: escaneo, aprobaciones y tickets integrado con operaciones de conductores.',
+      result: en ? 'Mobile · Transport' : 'Móvil · Transporte', year: '2025', color: '#2a5c2a',
       image: '/Captura de pantalla 2025-08-12 093338.png',
-      href: '#contact'
     },
     {
-      title: 'PetuLap Electronics Catalog',
-      description: 'Landing page and catalog site for refurbished laptops and computers, optimized for lead capture and WhatsApp contact.',
+      idx: 'W-04', client: 'PetuLap',
+      kind: en ? 'Web · E-commerce' : 'Web · E-commerce',
+      title: en ? 'Electronics catalog optimized for lead capture.' : 'Catálogo de electrónica optimizado para leads.',
+      hint: en ? 'Landing and catalog site for refurbished laptops, optimized for lead capture and WhatsApp contact.' : 'Sitio catálogo para laptops reacondicionadas, optimizado para captura de leads y contacto por WhatsApp.',
+      result: en ? 'E-commerce · Leads' : 'E-commerce · Leads', year: '2025', color: '#5c3a1e',
       image: '/Captura de pantalla 2025-08-12 095946.png',
-      href: '#contact'
     },
     {
-      title: 'BP Ventures Invoicing Suite',
-      description: 'Multi-company invoicing dashboard with filtering, status tracking, and invoice actions for finance teams.',
+      idx: 'W-05', client: 'BP Ventures',
+      kind: en ? 'Web app · Finance' : 'App web · Finanzas',
+      title: en ? 'Multi-company invoicing with full status tracking.' : 'Facturación multi-empresa con seguimiento completo.',
+      hint: en ? 'Multi-company invoicing dashboard with filtering, status tracking, and invoice actions for finance teams.' : 'Dashboard de facturación multi-empresa con filtros, seguimiento de estado y acciones para equipos de finanzas.',
+      result: en ? 'Finance · SaaS' : 'Finanzas · SaaS', year: '2025', color: '#1e4a5c',
       image: '/Captura de pantalla 2025-08-12 100524.png',
-      href: '#contact'
     },
     {
-      title: 'Aura Admin Console',
-      description: 'Administration panel for managing AI assistant chats, client records, and system monitoring in a unified dashboard.',
+      idx: 'W-06', client: 'Aura Admin',
+      kind: en ? 'Web app · Admin' : 'App web · Admin',
+      title: en ? 'Unified console for AI chats and client records.' : 'Consola unificada para chats IA y clientes.',
+      hint: en ? 'Administration panel for managing AI assistant chats, client records, and system monitoring in a unified dashboard.' : 'Panel de administración para chats IA, registros de clientes y monitoreo del sistema.',
+      result: en ? 'AI · Admin' : 'IA · Admin', year: '2025', color: '#3a1e5c',
       image: '/Captura de pantalla 2025-08-12 103906.png',
-      href: '#contact'
     },
     {
-      title: 'Logistics Palletization Simulator',
-      description: 'Web app for warehouse and transportation operations that simulates palletization: calculates how many cartons fit on a pallet based on carton geometry and dry van capacity constraints, with support for refrigerated cargo.',
+      idx: 'W-07', client: 'Palletization Sim',
+      kind: en ? 'Web app · Logistics' : 'App web · Logística',
+      title: en ? 'Warehouse simulator for palletization planning.' : 'Simulador de paletización para almacenes.',
+      hint: en ? 'Calculates how many cartons fit on a pallet based on carton geometry and dry-van or refrigerated capacity constraints.' : 'Calcula cuántos cartones caben en un pallet según geometría y restricciones de furgón seco o refrigerado.',
+      result: en ? 'Logistics · Ops' : 'Logística · Ops', year: '2025', color: '#3a4a1e',
       video: '/Grabación 2025-08-11 172552.mp4',
       poster: '/Captura de pantalla 2025-06-19 182335.png',
-      href: '#contact'
     },
     {
-      title: 'Dealer Analytics Dashboard',
-      description: 'Real-time KPIs, sales, credit, and inventory tracking with advanced filtering.',
+      idx: 'W-08', client: 'Dealer Analytics',
+      kind: en ? 'Web app · Analytics' : 'App web · Analítica',
+      title: en ? 'Real-time KPIs and dealer performance tracking.' : 'KPIs en tiempo real y rendimiento de concesionarios.',
+      hint: en ? 'Real-time KPIs, sales, credit, and inventory tracking with advanced filtering for automotive dealerships.' : 'KPIs en tiempo real, ventas, crédito e inventario con filtros avanzados para distribuidoras automotrices.',
+      result: en ? 'Analytics · SaaS' : 'Analítica · SaaS', year: '2025', color: '#1e3a5c',
       video: '/Grabación 2025-08-12 084414.mp4',
       poster: '/Captura de pantalla 2025-06-19 182335.png',
-      href: '#contact'
     },
   ];
 
+  const services: ServiceItem[] = [
+    {
+      idx: 'S-01',
+      title: en ? 'Web applications' : 'Aplicaciones web',
+      tag: 'Apps',
+      body: en
+        ? 'Production-grade SaaS, portals and dashboards. Built on stacks you can actually hire for.'
+        : 'SaaS de nivel productivo, portales y dashboards. Construidos con tecnologías confiables.',
+      stack: 'Next · Postgres · Stripe',
+    },
+    {
+      idx: 'S-02',
+      title: en ? 'AI agents' : 'Agentes IA',
+      tag: 'Agents',
+      body: en
+        ? 'Custom agents wired into your tools. Inbox triage, lead qualifying, support copilots, internal RAG.'
+        : 'Agentes personalizados en tus herramientas. Triaje de correos, calificación de leads, RAG interno.',
+      stack: 'Claude · OpenAI · Tools',
+    },
+    {
+      idx: 'S-03',
+      title: en ? 'Automations' : 'Automatizaciones',
+      tag: 'Ops',
+      body: en
+        ? "Quiet pipelines that take work off your plate — billing, onboarding, reporting, tool sync."
+        : 'Pipelines silenciosos que alivian tu carga — facturación, onboarding, reportes, sincronización.',
+      stack: 'n8n · Zapier · API',
+    },
+    {
+      idx: 'S-04',
+      title: en ? 'Mobile apps' : 'Apps móviles',
+      tag: 'Native',
+      body: en
+        ? 'iOS and Android from prototype to App Store. One codebase, native feel, real shipping cadence.'
+        : 'iOS y Android del prototipo al App Store. Un codebase, sensación nativa, lanzamientos reales.',
+      stack: 'Expo · Swift · Kotlin',
+    },
+  ];
+
+  const steps = [
+    {
+      n: '01', t: en ? 'Brief' : 'Brief',
+      d: en
+        ? 'A 45-minute call. We learn the business, you learn how we work. Free, no decks.'
+        : 'Una llamada de 45 minutos. Conocemos tu negocio, tú conoces cómo trabajamos. Sin presentaciones.',
+    },
+    {
+      n: '02', t: en ? 'Shape' : 'Diseño',
+      d: en
+        ? 'Two weeks of prototyping. You see the actual product on a real device before we commit.'
+        : 'Dos semanas de prototipado. Ves el producto real en un dispositivo antes de comprometerte.',
+    },
+    {
+      n: '03', t: en ? 'Build' : 'Desarrollo',
+      d: en
+        ? '4–10 week sprints with a fixed, named crew. Weekly demos. No mystery weeks.'
+        : 'Sprints de 4–10 semanas con un equipo fijo. Demos semanales. Sin semanas de misterio.',
+    },
+    {
+      n: '04', t: en ? 'Orbit' : 'Órbita',
+      d: en
+        ? "We hand off, or we stay on retainer to keep it running. Always your code, always your call."
+        : 'Entregamos o seguimos en retainer. Siempre tu código, siempre tu decisión.',
+    },
+  ];
+
+  const inputStyle: React.CSSProperties = {
+    background: 'rgba(242,241,238,0.04)',
+    border: `1px solid ${ECL.hair}`,
+    borderRadius: 6,
+    padding: '11px 14px',
+    color: ECL.ink,
+    fontFamily: SANS,
+    fontSize: 14,
+    outline: 'none',
+    width: '100%',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: MONO,
+    fontSize: 10,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    color: ECL.mute,
+    display: 'block',
+    marginBottom: 6,
+  };
+
+  const px = 'clamp(20px, 5.5vw, 80px)';
+  const sectionPad = `clamp(60px, 9vh, 120px) ${px}`;
+
   return (
-    <div className="relative min-h-[500vh] overflow-hidden"
-         style={{ 
-           paddingTop: 'var(--spacing-5xl)',
-           scrollPadding: 'var(--spacing-4xl)' 
-         }}>
-      {/* Deep Space Background with Parallax */}
-      <motion.div 
-        style={{ y: skyY }}
-        className="fixed inset-0 space-background"
-      />
+    <div style={{ background: ECL.bg, color: ECL.ink, fontFamily: SANS, overflowX: 'hidden' }}>
 
-
-
-      {/* Multiple Star Field Layers with Individual Parallax */}
-      <motion.div 
-        style={{ y: starLayer1Y }}
-        className="fixed inset-0"
+      {/* ── NAV ───────────────────────────────────────────── */}
+      <nav
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, height: 72, zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: `0 ${px}`,
+          background: `${ECL.bg}ee`,
+          backdropFilter: 'blur(12px)',
+          borderBottom: `1px solid ${ECL.hair}`,
+        }}
       >
-        <div className="star-field-1" />
-      </motion.div>
-      
-      <motion.div 
-        style={{ y: starLayer2Y }}
-        className="fixed inset-0"
-      >
-        <div className="star-field-2" />
-      </motion.div>
-      
-      <motion.div 
-        style={{ y: starLayer3Y }}
-        className="fixed inset-0"
-      >
-        <div className="star-field-3" />
-      </motion.div>
-      
-      <motion.div 
-        style={{ y: starLayer4Y }}
-        className="fixed inset-0"
-      >
-        <div className="star-field-4" />
-      </motion.div>
+        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: ECL.ink, flexShrink: 0 }}>
+          <CrescentMark size={22} />
+          <span style={{ fontFamily: SANS, fontWeight: 500, letterSpacing: '0.06em', fontSize: 13 }}>LUNA&nbsp;LAB</span>
+          <span style={{ width: 1, height: 14, background: ECL.faint, margin: '0 4px' }} />
+          <MonoLabel color={ECL.mute} size={11}>LA · REMOTE</MonoLabel>
+        </a>
 
-      {/* Cosmic Nebula Layers for Depth */}
-      <motion.div 
-        style={{ y: nebulaY }}
-        className="fixed inset-0 pointer-events-none"
-      >
-        {/* High altitude cosmic dust */}
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-transparent" 
-             style={{ height: '40vh', top: '20vh' }} />
-        {/* Mid-level nebula */}
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-500/3 via-transparent to-transparent" 
-             style={{ height: '30vh', bottom: '30vh' }} />
-        {/* Deep space glow */}
-        <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/8 via-purple-500/3 to-transparent" 
-             style={{ height: '25vh', bottom: '0vh' }} />
-      </motion.div>
-
-      {/* Deep Space Galaxy Floor - Visible at the end */}
-      <motion.div 
-        style={{ y: galaxyY }}
-        className="fixed inset-0"
-      >
-        <div className="space-floor" />
-      </motion.div>
-
-      {/* Enhanced Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-nav">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <motion.div 
-              className="nav-logo flex items-center space-x-3"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              
-              <div className="logo" aria-label="Luna Lab">
-      
-      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="16" cy="16" r="9.5" stroke="#EAECEF" stroke-width="2"/>
-        <circle cx="19" cy="13" r="8" fill="#0A0B10"/>
-      </svg>
-              <span className="logo-text">Luna Lab</span>
-    </div>
-            </motion.div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-2 ml-auto">
-              {navLinks.map((link, index) => (
-                <motion.a 
-                  key={link.id}
-                  href={`#${link.id}`} 
-                  className="nav-link text-white/90 hover:text-white transition-all duration-300"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {link.label}
-                </motion.a>
-              ))}
-              <motion.a 
-                href="#contact"
-                className="nav-cta ml-2"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {t.getStarted}
-              </motion.a>
-              {/* Language Toggle */}
-              <div className="ml-6 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-white/10 to-white/5 p-1 border border-white/25 backdrop-blur-md shadow-lg" style={{ marginLeft: '1.5rem', padding: '0.5rem' }}>
-                <button
-                  className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${lang==='en' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
-                  onClick={() => setLang('en')}
-                  aria-pressed={lang==='en'}
-                >EN</button>
-                <button
-                  className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${lang==='es' ? 'bg-white/95 text-black shadow-sm' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
-                  onClick={() => setLang('es')}
-                  aria-pressed={lang==='es'}
-                >ES</button>
-              </div>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="lg:hidden">
-              <motion.button 
-                className="nav-link p-2"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <div className="w-6 h-6 flex flex-col justify-center space-y-1">
-                  <div className="w-full h-0.5 bg-white rounded"></div>
-                  <div className="w-full h-0.5 bg-white rounded"></div>
-                  <div className="w-full h-0.5 bg-white rounded"></div>
-                </div>
-              </motion.button>
-            </div>
-          </div>
+        {/* Desktop links */}
+        <div className="hidden lg:flex" style={{ alignItems: 'center', gap: 32 }}>
+          {navItems.map((it) => (
+            <a key={it.id} href={`#${it.id}`}
+              style={{ color: ECL.ink, fontFamily: SANS, fontSize: 14, textDecoration: 'none', opacity: 0.9 }}>
+              {it.label}
+            </a>
+          ))}
         </div>
+
+        {/* Right side */}
+        <div className="hidden lg:flex" style={{ alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, borderRadius: 999, border: `1px solid ${ECL.faint}`, padding: '3px 4px' }}>
+            {(['en', 'es'] as const).map((l) => (
+              <button key={l} onClick={() => setLang(l)}
+                style={{
+                  padding: '5px 11px', borderRadius: 999,
+                  background: lang === l ? ECL.ink : 'transparent',
+                  color: lang === l ? ECL.bg : ECL.ink,
+                  border: 'none', cursor: 'pointer',
+                  fontFamily: SANS, fontSize: 11, fontWeight: 500,
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  transition: 'all 200ms',
+                }}>
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <a href="#contact"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              color: ECL.ink, fontFamily: SANS, fontSize: 14,
+              padding: '9px 16px', border: `1px solid ${ECL.faint}`, borderRadius: 999,
+              textDecoration: 'none',
+            }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: ECL.accent, boxShadow: `0 0 8px ${ECL.accent}` }} />
+            {en ? 'Begin transmission' : 'Iniciar transmisión'}
+          </a>
+        </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="lg:hidden"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 8 }}
+          aria-label="Toggle menu"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {[0, 1, 2].map((i) => (
+              <span key={i} style={{ display: 'block', width: 22, height: 1.5, background: ECL.ink, borderRadius: 2 }} />
+            ))}
+          </div>
+        </button>
       </nav>
 
-      {/* Hero Section */}
-      <section className="section-spacing relative min-h-[70vh] flex items-center justify-center z-10">
-        <div className="content-container text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="hero-card card-padding-xl rounded-3xl mx-auto max-w-6xl p-6 md:p-10 relative overflow-hidden"
-          >
-            {/* Animated engagement elements */}
-            <motion.div
-              className="pointer-events-none absolute -top-10 right-6 w-40 h-40 sm:w-56 sm:h-56 rounded-full bg-gradient-to-br from-purple-500/30 via-blue-500/30 to-indigo-500/30 blur-2xl"
-              animate={{ x: [0, 18, -12, 0], y: [0, -14, 8, 0], rotate: [0, 12, -10, 0] }}
-              transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div
-              className="pointer-events-none absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-gradient-to-tr from-indigo-500/20 via-blue-500/20 to-purple-500/20 blur-xl"
-              animate={{ x: [0, -10, 6, 0], y: [0, 8, -6, 0], scale: [1, 1.06, 0.98, 1] }}
-              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            />
-            <motion.div
-              className="pointer-events-none absolute top-6 left-1/2 w-1.5 h-1.5 bg-white/70 rounded-full"
-              animate={{ y: [0, -6, 0], opacity: [0.4, 0.9, 0.4] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.h1 
-              className="hero-title text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white text-spacing-loose leading-tight"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.4 }}
-            >
-              <span className="hero-title-line block text-spacing-tight">{lang === 'en' ? 'Exploring Digital' : 'Explorando'}</span>
-              <span className="hero-title-gradient block">
-                {lang === 'en' ? 'Frontiers' : 'Fronteras Digitales'}
-              </span>
-            </motion.h1>
-            
-            <motion.p 
-              className="hero-description text-sm sm:text-base md:text-lg lg:text-lg text-white/85 text-spacing-relaxed max-w-3xl mx-auto leading-relaxed font-light break-words"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            >
-              <span className="hero-description-line block text-spacing-relaxed">{lang === 'en' ? 'We are cosmic innovators, navigating the infinite' : 'Somos innovadores cósmicos, navegando el infinito'}</span>
-              <span className="hero-description-line block text-spacing-relaxed">{lang === 'en' ? 'possibilities of technology to create stellar' : 'de posibilidades de la tecnología para crear'}</span>
-              <span className="hero-description-line block">{lang === 'en' ? 'software solutions that propel your business to new galaxies.' : 'soluciones que impulsen tu negocio a nuevas galaxias.'}</span>
-            </motion.p>
-            
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.8 }}
-            >
-              <motion.a
-                href="#contact"
-                className="btn-primary rounded-full text-white"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Start Your Project
-              </motion.a>
-              <motion.a
-                href="#portfolio"
-                className="btn-secondary rounded-full text-white"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                View Our Work
-              </motion.a>
-            </motion.div>
-          </motion.div>
-        </div>
-        
-        <motion.div 
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <ArrowDown className="text-white/60 w-6 h-6" />
-        </motion.div>
-      </section>
-
-      {/* Portfolio Section */}
-      <section id="portfolio" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
-        <div className="content-container w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            viewport={{ once: true }}
-            className="text-center text-spacing-extra-loose mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
-              {lang === 'en' ? 'Featured Work' : 'Trabajo Destacado'}
-            </h2>
-            <p className="text-white/80 max-w-4xl mx-auto mt-3 text-base sm:text-lg md:text-xl font-light">
-              {lang === 'en' ? 'A glimpse into the projects we’ve delivered across industries' : 'Un vistazo a los proyectos que hemos entregado en diversas industrias'}
-            </p>
-          </motion.div>
-
-          <div className="grid gap-6 md:gap-8 lg:gap-10 xl:gap-12 md:grid-cols-2 xl:grid-cols-3">
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.title}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="hero-card rounded-2xl overflow-hidden group flex flex-col ring-1 ring-white/10 hover:ring-white/20 transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <div className="relative h-56 md:h-64 overflow-hidden">
-                  {project.video ? (
-                    <video
-                      autoPlay
-                      loop
-                      muted
-                      preload="metadata"
-                      playsInline
-                      poster={project.poster ? encodeURI(project.poster) : undefined}
-                      className="absolute inset-0 w-full h-full object-cover object-center opacity-95"
-                      style={{ objectPosition: project.title === 'Dealer Analytics Dashboard' ? 'left center' : (project.title === 'Logistics Palletization Simulator' ? '43% center' : '50% center') }}
-                      src={encodeURI(project.video)}
-                    />
-                  ) : project.image ? (
-                    <Image
-                      src={project.image}
-                      alt={project.title}
-                      fill
-                      sizes="(min-width: 1280px) 400px, 50vw"
-                      className="object-cover object-center opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.005]"
-                      style={{ objectPosition: project.title === 'BP Ventures Invoicing Suite' ? 'left center' : undefined }}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-blue-500/30 to-indigo-500/30" />
-                  )}
-                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 35%)' }} />
-                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
-                  <div className="absolute top-3 right-3 text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white/90">
-                    {project.video ? 'Video' : 'Image'}
-                  </div>
-                </div>
-                <div className="px-6 md:px-8 lg:px-10 xl:px-14 py-6 md:py-8 lg:py-10 xl:py-12">
-                  <h3 className="px-6 text-xl md:text-2xl font-semibold text-white leading-tight tracking-tight mb-4 break-words" style={{ padding: '1.2rem' }}>{project.title}</h3>
-                  <p className="px-6 text-white/85 text-sm md:text-base leading-relaxed break-words" style={{ padding: '1.2rem' }}>{project.description}</p>
-                </div>
-                
-              </motion.div>
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div style={{
+          position: 'fixed', top: 72, left: 0, right: 0, zIndex: 49,
+          background: `${ECL.bg}f2`, backdropFilter: 'blur(16px)',
+          borderBottom: `1px solid ${ECL.hair}`,
+          padding: `24px ${px} 32px`,
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {navItems.map((it) => (
+              <a key={it.id} href={`#${it.id}`} onClick={() => setMobileOpen(false)}
+                style={{ color: ECL.ink, fontFamily: SANS, fontSize: 20, textDecoration: 'none' }}>
+                {it.label}
+              </a>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Services Section */}
-      <section id="services" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
-        <div className="content-container">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            viewport={{ once: true }}
-            className="text-center text-spacing-extra-loose"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-loose leading-tight">
-              {lang === 'en' ? 'Cosmic Capabilities' : 'Capacidades Cósmicas'}
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/80 max-w-4xl mx-auto leading-relaxed font-light">
-              {lang === 'en' ? 'From nebula concepts to stellar deployments, we navigate the cosmos of code' : 'Desde conceptos de nebulosa hasta despliegues estelares, navegamos el cosmos del código'}
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 xl:gap-12">
-            {[
-              {
-                icon: <Workflow className="w-8 h-8" />,
-                title: "Automations",
-                description: "Workflow automation and integrations that save time and reduce manual tasks"
-              },
-              {
-                icon: <Smartphone className="w-8 h-8" />,
-                title: "Mobile Apps",
-                description: "iOS and Android apps with smooth UX, performance, and modern tooling"
-              },
-              {
-                icon: <Code className="w-8 h-8" />,
-                title: "Web Apps",
-                description: "Robust web applications engineered with scalable, maintainable architectures"
-              }
-            ].map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                viewport={{ once: true }}
-                className="service-card card-padding-md rounded-2xl h-full flex flex-col group"
-              >
-                <div className="text-white/90 flex justify-center group-hover:text-white transition-colors duration-300">
-                  <div className="service-card-icon">
-                    {service.icon}
-                  </div>
-                </div>
-                <h3 className="service-card-title text-center">
-                  {service.title}
-                </h3>
-                <p className="service-card-description text-center flex-grow">
-                  {service.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="section-spacing relative min-h-screen flex items-center justify-center z-10">
-        <div className="content-container">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            viewport={{ once: true }}
-            className="glass-card card-padding-xl rounded-3xl mx-auto max-w-7xl"
-          >
-            <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 xl:gap-14 items-center">
-              <div className="text-center lg:text-left">
-                <motion.h2 
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-spacing-extra-loose leading-[1.1] tracking-tight"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="block text-spacing-tight">{lang === 'en' ? 'Why Choose' : '¿Por qué elegir'}</span>
-                  <span className="block bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 bg-clip-text text-transparent">
-                    {lang === 'en' ? 'Us?' : 'nos?'}
-                  </span>
-                </motion.h2>
-                
-                <motion.p 
-                  className="text-sm sm:text-base md:text-lg text-white/85 text-spacing-relaxed leading-relaxed font-light max-w-2xl mx-auto lg:mx-0"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="block">{lang === 'en' ? 'We turn ideas into fast, scalable products that drive growth.' : 'Convertimos ideas en productos rápidos y escalables que impulsan el crecimiento.'}</span>
-                </motion.p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { icon: "🚀", title: "Expert Development Team", desc: "Seasoned professionals with cutting-edge expertise" },
-                    { icon: "⚡", title: "Agile Project Management", desc: "Fast, flexible delivery with continuous collaboration" },
-                    { icon: "🛡️", title: "pay when you are satisfied", desc: "Only pay when the delivered work meets your expectations" },
-                    { icon: "📈", title: "Scalable Architecture", desc: "Future-ready solutions that grow with your business" }
-                  ].map((feature, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.15 }}
-                      viewport={{ once: true }}
-                      className="feature-item group bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-200"
-                    >
-                      <div className="flex items-start space-x-3 lg:justify-start justify-center lg:text-left text-center">
-                        <div className="text-2xl lg:text-3xl mb-1 group-hover:scale-110 transition-transform duration-300">
-                          {feature.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base lg:text-lg font-semibold text-white mb-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
-                            {feature.title}
-                          </h3>
-                          <p className="text-white/70 text-xs lg:text-sm leading-relaxed group-hover:text-white/80 transition-colors duration-300">
-                            {feature.desc}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-              <div className="relative flex justify-center lg:justify-end">
-                <motion.div 
-                  className="stat-card rounded-3xl p-8 lg:p-10 text-center max-w-md group overflow-hidden"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                  viewport={{ once: true }}
-                >
-                  <div className="relative mb-8 lg:mb-12">
-                    <div className="w-28 h-28 lg:w-32 lg:h-32 mx-auto rounded-full bg-gradient-to-br from-purple-400/40 to-blue-500/40 border-2 border-white/40 flex items-center justify-center group-hover:border-white/60 transition-all duration-500 group-hover:rotate-12">
-                      <Users className="w-14 h-14 lg:w-16 lg:h-16 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110" />
-                    </div>
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400/15 to-blue-500/15 blur-2xl group-hover:blur-3xl transition-all duration-500 group-hover:scale-125"></div>
-                    
-                    {/* Floating particles */}
-                    <div className="absolute -top-2 -right-2 w-3 h-3 bg-purple-400 rounded-full opacity-70 group-hover:animate-bounce"></div>
-                    <div className="absolute -bottom-2 -left-2 w-2 h-2 bg-blue-400 rounded-full opacity-60 group-hover:animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="absolute top-4 -left-4 w-1.5 h-1.5 bg-indigo-300 rounded-full opacity-50 group-hover:animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                  
-                  <motion.h3 
-                    className="text-4xl lg:text-5xl xl:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 mb-2 lg:mb-3 leading-none"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.6 }}
-                    viewport={{ once: true }}
-                  >
-                    100%
-                  </motion.h3>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.8 }}
-                    viewport={{ once: true }}
-                  >
-                    <p className="text-lg lg:text-xl font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300 break-words max-w-xs mx-auto">
-                      Client Satisfaction
-                    </p>
-                    <p >Guarantee</p>
-                    
-                  </motion.div>
-                </motion.div>
-              </div>
+            <div style={{ display: 'flex', gap: 8, paddingTop: 16, borderTop: `1px solid ${ECL.hair}` }}>
+              {(['en', 'es'] as const).map((l) => (
+                <button key={l} onClick={() => setLang(l)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 999,
+                    background: lang === l ? ECL.ink : 'transparent',
+                    color: lang === l ? ECL.bg : ECL.ink,
+                    border: `1px solid ${ECL.faint}`,
+                    cursor: 'pointer', fontFamily: SANS, fontSize: 13, fontWeight: 500,
+                    textTransform: 'uppercase',
+                  }}>
+                  {l.toUpperCase()}
+                </button>
+              ))}
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Enhanced Contact Section */}
-      <section id="contact" className="section-spacing relative flex items-center justify-center z-10" style={{ minHeight: '80vh' }}>
-        <div className="content-container">
-          {/* Compact Hero Introduction */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="contact-hero text-center relative z-10"
-          >
-            <motion.h2 
-              className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              viewport={{ once: true }}
-            >
-              {lang === 'en' ? 'Ready to Launch?' : '¿Listo para despegar?'}
-            </motion.h2>
-            <motion.p 
-              className="text-base sm:text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed font-light"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              {lang === 'en' ? 'Transform your vision into stellar digital reality.' : 'Transforma tu visión en una realidad digital estelar.'}
-            </motion.p>
-
-            {/* Compact Trust Badges */}
-            <motion.div 
-              className="flex flex-wrap justify-center gap-3 mt-6"
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              viewport={{ once: true }}
-            >
-              <div className="trust-badge">
-                <Shield className="trust-badge-icon" />
-                <span>{lang === 'en' ? 'Confidential' : 'Confidencial'}</span>
-              </div>
-              <div className="trust-badge">
-                <Clock className="trust-badge-icon" />
-                <span>{lang === 'en' ? 'Pay When Satisfied' : 'Paga cuando estés satisfecho'}</span>
-              </div>
-              {/* Removed misleading projects count */}
-            </motion.div>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-1 gap-8 lg:gap-12">
-            {/* Compact Contact Form */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="contact-form-enhanced rounded-2xl card-padding-lg"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                viewport={{ once: true }}
-                className="mb-6"
-              >
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                  {lang === 'en' ? 'Start Your Mission' : 'Comienza tu misión'}
-                </h3>
-                <p className="text-white/80 leading-relaxed">
-                  Share your project details and let&apos;s bring your vision to life.
-                </p>
-              </motion.div>
-              
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <motion.div 
-                    className="form-group-enhanced"
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                    viewport={{ once: true }}
-                  >
-                    <label htmlFor="name" className="form-label-enhanced">Your Name</label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="John Smith"
-                      className="form-input-enhanced"
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </motion.div>
-
-                  <motion.div 
-                    className="form-group-enhanced"
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
-                    viewport={{ once: true }}
-                  >
-                    <label htmlFor="email" className="form-label-enhanced">Email</label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="john@company.com"
-                      className="form-input-enhanced"
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </motion.div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <motion.div 
-                    className="form-group-enhanced"
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.8 }}
-                    viewport={{ once: true }}
-                  >
-                    <label htmlFor="budget" className="form-label-enhanced">Budget</label>
-                    <select
-                      id="budget"
-                      name="budget"
-                      value={formData.budget}
-                      onChange={handleInputChange}
-                      className="form-input-enhanced"
-                      required
-                      disabled={isSubmitting}
-                    >
-                      <option value="">Select Range</option>
-                      <option value="5k-15k">$5k - $15k</option>
-                      <option value="15k-50k">$15k - $50k</option>
-                      <option value="50k-100k">$50k - $100k</option>
-                      <option value="100k+">$100k+</option>
-                    </select>
-                  </motion.div>
-
-                  <motion.div 
-                    className="form-group-enhanced"
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.9 }}
-                    viewport={{ once: true }}
-                  >
-                    <label htmlFor="projectType" className="form-label-enhanced">Project Type</label>
-                    <select
-                      id="projectType"
-                      name="projectType"
-                      value={formData.projectType}
-                      onChange={handleInputChange}
-                      className="form-input-enhanced"
-                      required
-                      disabled={isSubmitting}
-                    >
-                      <option value="">Select Type</option>
-                      <option value="web-app">Web Application</option>
-                      <option value="mobile-app">Mobile Application</option>
-                      <option value="website">Website</option>
-                      <option value="ecommerce">E-commerce</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </motion.div>
-                </div>
-
-                <motion.div 
-                  className="form-group-enhanced"
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 1 }}
-                  viewport={{ once: true }}
-                >
-                  <label htmlFor="message" className="form-label-enhanced">Project Details</label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    placeholder="Describe your project vision, goals, and requirements..."
-                    className="form-textarea-enhanced"
-                    rows={4}
-                    required
-                    disabled={isSubmitting}
-                  ></textarea>
-                </motion.div>
-
-                {/* Status Messages */}
-                {submitStatus.type && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-4 rounded-xl border ${
-                      submitStatus.type === 'success' 
-                        ? 'bg-green-500/10 border-green-500/20 text-green-200' 
-                        : 'bg-red-500/10 border-red-500/20 text-red-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {submitStatus.type === 'success' ? (
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <Mail className="w-5 h-5 text-red-400" />
-                      )}
-                      <p className="text-sm font-medium">{submitStatus.message}</p>
-                    </div>
-                  </motion.div>
-                )}
-
-                <motion.button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn-primary rounded-full text-white w-full relative overflow-hidden group disabled:opacity-60 disabled:cursor-not-allowed"
-                  whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
-                  whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 1.1 }}
-                  viewport={{ once: true }}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-3">
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        Launching...
-                      </>
-                    ) : (
-                      <>
-                        <Rocket className="w-5 h-5" />
-                        Launch Project
-                      </>
-                    )}
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.button>
-              </form>
-            </motion.div>
-
-            {/* Contact Info column removed per request */}
           </div>
         </div>
+      )}
+
+      {/* ── HERO ──────────────────────────────────────────── */}
+      <section
+        ref={heroRef}
+        style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: ECL.bg }}
+      >
+        <Starfield count={220} />
+
+        {/* Cursor-follow glow */}
+        <div style={{
+          position: 'absolute',
+          left: cursor.x - 240,
+          top: cursor.y - 240,
+          width: 480, height: 480,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${ECL.accent}44, ${ECL.accent}00 65%)`,
+          opacity: cursor.inside ? 1 : 0,
+          transition: 'opacity 400ms ease',
+          pointerEvents: 'none',
+          mixBlendMode: 'screen',
+        }} />
+
+        {/* Moon — hidden on very small screens */}
+        <div
+          className="hidden sm:block"
+          style={{
+            position: 'absolute',
+            right: `clamp(20px, 5vw, ${px})`,
+            top: 'clamp(90px, 12vh, 150px)',
+            width: 'clamp(200px, 32vw, 480px)',
+            height: 'clamp(200px, 32vw, 480px)',
+          }}
+        >
+          {/* Outer orbital ring */}
+          <div style={{ position: 'absolute', inset: 'clamp(-60px, -13vw, -130px)', borderRadius: '50%', border: `1px solid ${ECL.hair}` }} />
+          {/* Inner orbital ring (dashed) */}
+          <div style={{ position: 'absolute', inset: 'clamp(-30px, -6.5vw, -65px)', borderRadius: '50%', border: `1px dashed ${ECL.hair}` }} />
+          {/* Orbiting dot 1 */}
+          <div style={{ position: 'absolute', inset: 'clamp(-60px, -13vw, -130px)', animation: 'ecl-orbit 26s linear infinite', transformOrigin: '50% 50%' }}>
+            <div style={{ position: 'absolute', left: '50%', top: '-4px', width: 8, height: 8, background: ECL.accent, borderRadius: '50%', boxShadow: `0 0 20px ${ECL.accent}`, transform: 'translateX(-50%)' }} />
+          </div>
+          {/* Orbiting dot 2 */}
+          <div style={{ position: 'absolute', inset: 'clamp(-30px, -6.5vw, -65px)', animation: 'ecl-orbit 42s linear infinite reverse' }}>
+            <div style={{ position: 'absolute', left: '50%', top: '-2px', width: 4, height: 4, background: ECL.ink, borderRadius: '50%', opacity: 0.6, transform: 'translateX(-50%)' }} />
+          </div>
+          {/* Corona glow */}
+          <div style={{ position: 'absolute', inset: -40, borderRadius: '50%', background: `radial-gradient(circle at 86% 45%, ${ECL.accent}4a 0%, ${ECL.accent}00 60%)`, pointerEvents: 'none', filter: 'blur(6px)' }} />
+          {/* Moon disc — Sketchfab 3D model */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#0c0b12', overflow: 'hidden', boxShadow: `0 0 100px ${ECL.accent}28` }}>
+            <iframe
+              title="Moon"
+              src="https://sketchfab.com/models/4db2273f6dd943b8ad7fa5e3b1b2431a/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&transparent=1"
+              style={{ position: 'absolute', width: '120%', height: '120%', top: '-10%', left: '-10%', border: 'none' }}
+              allow="autoplay; fullscreen; xr-spatial-tracking"
+            />
+          </div>
+        </div>
+
+        {/* Headline block */}
+        <div style={{
+          position: 'relative', zIndex: 3,
+          padding: `clamp(100px, 14vh, 160px) ${px} clamp(80px, 10vh, 120px)`,
+          maxWidth: `min(720px, ${lang === 'es' ? '90vw' : '58vw'})`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+            <span style={{ width: 28, height: 1, background: ECL.accent, flexShrink: 0 }} />
+            <MonoLabel color={ECL.accent} size={11}>
+              {en ? 'Mission 026 · Studio status: online' : 'Misión 026 · Estudio: en línea'}
+            </MonoLabel>
+          </div>
+
+          <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(40px, 6vw, 96px)', lineHeight: 1.0, letterSpacing: '-0.025em' }}>
+            <span style={{ display: 'block', whiteSpace: 'nowrap' }}>{en ? 'Software built' : 'Software para'}</span>
+            <span style={{ display: 'block', whiteSpace: 'nowrap' }}>{en ? 'for small teams' : 'equipos pequeños'}</span>
+            <span style={{ display: 'block' }}>
+              {en ? 'with ' : 'con '}
+              <em style={{ fontStyle: 'italic', color: ECL.accent }}>{en ? 'large orbits' : 'grandes órbitas'}</em>.
+            </span>
+          </h1>
+
+          <p style={{ marginTop: 32, maxWidth: 520, fontSize: 'clamp(15px, 1.4vw, 18px)', lineHeight: 1.55, color: ECL.mute, fontFamily: SANS }}>
+            {en
+              ? 'Luna Lab is a remote studio building web applications, AI agents, automations and mobile apps for small businesses ready to leave the ground.'
+              : 'Luna Lab es un estudio remoto que construye aplicaciones web, agentes IA, automatizaciones y apps móviles para pequeños negocios listos para despegar.'}
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 40, alignItems: 'center', flexWrap: 'wrap' }}>
+            <a href="#contact"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                background: ECL.ink, color: ECL.bg,
+                fontFamily: SANS, fontSize: 15, fontWeight: 500,
+                padding: '14px 22px', borderRadius: 999, textDecoration: 'none',
+                letterSpacing: '-0.005em',
+              }}>
+              {en ? 'Start a project' : 'Inicia un proyecto'}
+              <svg width="14" height="14" viewBox="0 0 14 14">
+                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+            <a href="#work"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                color: ECL.ink, border: `1px solid ${ECL.faint}`,
+                fontFamily: SANS, fontSize: 15, fontWeight: 400,
+                padding: '13px 22px', borderRadius: 999, textDecoration: 'none',
+              }}>
+              {en ? 'See selected work' : 'Ver trabajo seleccionado'}
+            </a>
+          </div>
+        </div>
+
+        {/* Telemetry bar */}
+        <div
+          className="hidden sm:flex"
+          style={{
+            position: 'absolute', left: px, right: px, bottom: 40,
+            justifyContent: 'space-between', alignItems: 'center',
+            paddingTop: 18, borderTop: `1px solid ${ECL.hair}`, zIndex: 3,
+          }}
+        >
+          <MonoLabel color={ECL.mute}>LAT 34.0522° · LON −118.2437° · LA</MonoLabel>
+          <MonoLabel color={ECL.mute}>{en ? 'Booking Q3 · 2 slots remaining' : 'Agenda Q3 · 2 espacios disponibles'}</MonoLabel>
+          <MissionClock />
+        </div>
+
+        <style>{`
+          @keyframes ecl-orbit { to { transform: rotate(360deg); } }
+        `}</style>
       </section>
 
-      {/* Transition Space - Gradual descent */}
-      <div className="relative z-10" style={{ height: '150vh' }}>
-        <motion.div 
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to bottom, transparent 0%, rgba(16, 7, 39, 0.2) 30%, rgba(16, 7, 39, 0.4) 60%, rgba(16, 7, 39, 0.6) 100%)',
-            opacity: transitionOpacity
-          }}
-        />
-        
-        {/* Floating cosmic elements for smoother transition */}
-        <motion.div 
-          className="absolute inset-0 overflow-hidden"
-          style={{ opacity: transitionOpacity }}
-        >
-          <motion.div 
-            className="absolute top-1/4 left-1/4 w-2 h-2 bg-purple-300 rounded-full"
-            animate={{ 
-              y: [0, -20, 0],
-              opacity: [0.3, 0.7, 0.3]
-            }}
-            transition={{ 
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div 
-            className="absolute top-1/2 right-1/3 w-1.5 h-1.5 bg-blue-200 rounded-full"
-            animate={{ 
-              y: [0, -15, 0],
-              opacity: [0.4, 0.8, 0.4]
-            }}
-            transition={{ 
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1
-            }}
-          />
-          <motion.div 
-            className="absolute bottom-1/3 left-1/2 w-1 h-1 bg-indigo-100 rounded-full"
-            animate={{ 
-              y: [0, -10, 0],
-              opacity: [0.5, 1, 0.5]
-            }}
-            transition={{ 
-              duration: 2.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.5
-            }}
-          />
-        </motion.div>
-      </div>
+      {/* ── SERVICES ──────────────────────────────────────── */}
+      <section id="services" style={{ position: 'relative', background: ECL.bg, color: ECL.ink, padding: sectionPad }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 72, flexWrap: 'wrap', gap: 32 }}>
+          <div>
+            <MonoLabel color={ECL.mute}>02 — {en ? 'Services' : 'Servicios'}</MonoLabel>
+            <h2 style={{ margin: '20px 0 0', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(36px, 5.5vw, 80px)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {en ? 'Four payloads.' : 'Cuatro servicios.'}<br />
+              <em style={{ fontStyle: 'italic', color: ECL.mute }}>{en ? 'One studio.' : 'Un estudio.'}</em>
+            </h2>
+          </div>
+          <p style={{ maxWidth: 360, color: ECL.mute, fontSize: 16, lineHeight: 1.55, margin: 0, fontFamily: SANS }}>
+            {en
+              ? "We keep the surface area small on purpose. Every engagement runs through the same crew, so quality doesn't bleed between disciplines."
+              : 'Mantenemos el área de servicio pequeña a propósito. Cada proyecto pasa por el mismo equipo para que la calidad no se diluya.'}
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', borderTop: `1px solid ${ECL.hair}` }}>
+          {services.map((s, i) => (
+            <ServiceCell key={s.idx} s={s} borderRight={i < services.length - 1} />
+          ))}
+        </div>
+      </section>
 
-      {/* Galaxy Footer section removed by request */}
+      {/* ── WORK ──────────────────────────────────────────── */}
+      <section id="work" style={{ position: 'relative', background: ECL.bg, color: ECL.ink, padding: sectionPad }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <MonoLabel color={ECL.mute}>03 — {en ? 'Selected work' : 'Trabajo seleccionado'}</MonoLabel>
+            <h2 style={{ margin: '20px 0 0', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(36px, 5.5vw, 80px)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {en ? 'Shipped this' : 'Entregado este'}{' '}
+              <em style={{ fontStyle: 'italic', color: ECL.mute }}>{en ? 'cycle' : 'ciclo'}</em>.
+            </h2>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {projects.map((p, i) => (
+            <WorkCard key={p.idx} project={p} tall={i === 1} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── PROCESS ───────────────────────────────────────── */}
+      <section id="process" style={{ position: 'relative', background: ECL.bg, color: ECL.ink, padding: sectionPad, borderTop: `1px solid ${ECL.hair}` }}>
+        <div style={{ marginBottom: 72, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <MonoLabel color={ECL.mute}>04 — {en ? 'Process' : 'Proceso'}</MonoLabel>
+            <h2 style={{ margin: '20px 0 0', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(36px, 5.5vw, 80px)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {en ? 'Pre-flight to' : 'Del despegue a la'}{' '}
+              <em style={{ fontStyle: 'italic', color: ECL.mute }}>{en ? 'orbit' : 'órbita'}</em>
+              {en ? ', in four phases.' : ', en cuatro fases.'}
+            </h2>
+          </div>
+          <MonoLabel color={ECL.faint}>{en ? 'Avg. duration · 8 weeks' : 'Duración promedio · 8 semanas'}</MonoLabel>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          {steps.map((s, i) => (
+            <div key={s.n} style={{
+              padding: 'clamp(28px, 3vw, 40px) clamp(18px, 2.5vw, 32px)',
+              borderLeft: `1px solid ${ECL.hair}`,
+              borderRight: i === steps.length - 1 ? `1px solid ${ECL.hair}` : 'none',
+              position: 'relative',
+              minHeight: 260,
+            }}>
+              <MonoLabel color={ECL.accent} size={13}>{s.n} / 04</MonoLabel>
+              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(28px, 3vw, 40px)', letterSpacing: '-0.015em', marginTop: 56 }}>
+                {s.t}
+              </div>
+              <p style={{ marginTop: 16, color: ECL.mute, fontFamily: SANS, fontSize: 15, lineHeight: 1.55 }}>{s.d}</p>
+              {/* Trajectory dot */}
+              <div style={{ position: 'absolute', top: 68, left: -4, width: 8, height: 8, borderRadius: '50%', background: ECL.accent, boxShadow: `0 0 12px ${ECL.accent}` }} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CONTACT / CTA ─────────────────────────────────── */}
+      <section id="contact" style={{ position: 'relative', background: ECL.bg, color: ECL.ink, padding: `clamp(80px, 12vh, 160px) ${px} clamp(40px, 6vh, 80px)`, overflow: 'hidden' }}>
+        {/* Soft arc glow */}
+        <div style={{
+          position: 'absolute', left: '50%', top: 0,
+          width: '180vw', height: '90vw',
+          transform: 'translateX(-50%)', borderRadius: '50%',
+          background: 'radial-gradient(circle at 50% 10%, rgba(160,107,255,0.12), rgba(160,107,255,0) 55%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* CTA headline */}
+        <div style={{ position: 'relative', textAlign: 'center', maxWidth: 900, margin: '0 auto' }}>
+          <MonoLabel color={ECL.accent}>05 — {en ? 'Begin transmission' : 'Iniciar transmisión'}</MonoLabel>
+          <h2 style={{ margin: '32px 0 0', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(40px, 7.5vw, 108px)', lineHeight: 1, letterSpacing: '-0.025em' }}>
+            {en ? "Let's build something" : 'Construyamos algo'}<br />
+            <em style={{ fontStyle: 'italic', color: ECL.accent }}>{en ? 'worth orbiting' : 'que valga la órbita'}</em>.
+          </h2>
+          <p style={{ marginTop: 32, fontSize: 18, color: ECL.mute, maxWidth: 540, marginInline: 'auto', lineHeight: 1.55 }}>
+            {en
+              ? "Drop us a line and we'll schedule the brief call within 48 hours."
+              : 'Escríbenos y agendaremos la llamada en menos de 48 horas.'}
+          </p>
+
+          {/* Trust badges */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
+            {[
+              { Icon: Shield, label: en ? 'Confidential' : 'Confidencial' },
+              { Icon: Clock,  label: en ? 'Pay when satisfied' : 'Paga cuando estés satisfecho' },
+            ].map(({ Icon, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', border: `1px solid ${ECL.hair}`, borderRadius: 999 }}>
+                <Icon style={{ width: 13, height: 13, color: ECL.accent }} />
+                <MonoLabel color={ECL.mute} size={10}>{label}</MonoLabel>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Form */}
+        <div style={{ maxWidth: 640, margin: '60px auto 0', position: 'relative' }}>
+          <div style={{ border: `1px solid ${ECL.hair}`, borderRadius: 12, padding: 'clamp(24px, 4vw, 44px)', background: 'rgba(242,241,238,0.02)' }}>
+            <h3 style={{ margin: '0 0 28px', fontFamily: SERIF, fontStyle: 'italic', fontSize: 26, fontWeight: 400, color: ECL.ink }}>
+              {en ? 'Start Your Mission' : 'Comienza tu misión'}
+            </h3>
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label htmlFor="name" style={labelStyle}>{en ? 'Your Name' : 'Tu nombre'}</label>
+                  <input type="text" id="name" name="name" value={formData.name}
+                    onChange={handleInputChange} placeholder="John Smith"
+                    required disabled={isSubmitting} style={inputStyle} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label htmlFor="email" style={labelStyle}>Email</label>
+                  <input type="email" id="email" name="email" value={formData.email}
+                    onChange={handleInputChange} placeholder="john@company.com"
+                    required disabled={isSubmitting} style={inputStyle} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label htmlFor="budget" style={labelStyle}>Budget</label>
+                  <select id="budget" name="budget" value={formData.budget}
+                    onChange={handleInputChange} required disabled={isSubmitting} style={inputStyle}>
+                    <option value="">Select Range</option>
+                    <option value="5k-15k">$5k - $15k</option>
+                    <option value="15k-50k">$15k - $50k</option>
+                    <option value="50k-100k">$50k - $100k</option>
+                    <option value="100k+">$100k+</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label htmlFor="projectType" style={labelStyle}>{en ? 'Project Type' : 'Tipo de proyecto'}</label>
+                  <select id="projectType" name="projectType" value={formData.projectType}
+                    onChange={handleInputChange} required disabled={isSubmitting} style={inputStyle}>
+                    <option value="">Select Type</option>
+                    <option value="web-app">Web Application</option>
+                    <option value="mobile-app">Mobile Application</option>
+                    <option value="website">Website</option>
+                    <option value="ecommerce">E-commerce</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label htmlFor="message" style={labelStyle}>{en ? 'Project Details' : 'Detalles del proyecto'}</label>
+                <textarea
+                  id="message" name="message" value={formData.message}
+                  onChange={handleInputChange} rows={4}
+                  placeholder={en ? 'Describe your project vision, goals, and requirements...' : 'Describe tu visión, objetivos y requisitos...'}
+                  required disabled={isSubmitting}
+                  style={{ ...inputStyle, resize: 'vertical' }}
+                />
+              </div>
+
+              {submitStatus.type && (
+                <div style={{
+                  padding: '12px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10,
+                  background: submitStatus.type === 'success' ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                  border: `1px solid ${submitStatus.type === 'success' ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)'}`,
+                  color: submitStatus.type === 'success' ? '#86efac' : '#fca5a5',
+                }}>
+                  {submitStatus.type === 'success'
+                    ? <CheckCircle style={{ width: 16, height: 16, flexShrink: 0 }} />
+                    : <Mail style={{ width: 16, height: 16, flexShrink: 0 }} />}
+                  <span style={{ fontSize: 14 }}>{submitStatus.message}</span>
+                </div>
+              )}
+
+              <button
+                type="submit" disabled={isSubmitting}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  background: ECL.accent, color: ECL.bg, border: 'none',
+                  fontFamily: SANS, fontWeight: 500, fontSize: 15,
+                  padding: '15px 28px', borderRadius: 999,
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.6 : 1,
+                  transition: 'opacity 200ms',
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div style={{ width: 18, height: 18, border: `2px solid ${ECL.bg}44`, borderTopColor: ECL.bg, borderRadius: '50%', animation: 'ecl-spin 0.8s linear infinite' }} />
+                    {en ? 'Launching...' : 'Enviando...'}
+                  </>
+                ) : (
+                  <>
+                    <Rocket style={{ width: 18, height: 18 }} />
+                    {en ? 'Launch Project' : 'Lanzar proyecto'}
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Moon attribution (Sketchfab terms) */}
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: ECL.faint }}>
+          3D Moon model by{' '}
+          <a href="https://sketchfab.com/shooter24994" target="_blank" rel="nofollow" style={{ color: ECL.mute, textDecoration: 'none' }}>Akshat</a>
+          {' on '}
+          <a href="https://sketchfab.com" target="_blank" rel="nofollow" style={{ color: ECL.mute, textDecoration: 'none' }}>Sketchfab</a>
+        </p>
+
+        {/* Footer */}
+        <footer style={{
+          position: 'relative', marginTop: 100, paddingTop: 32,
+          borderTop: `1px solid ${ECL.hair}`,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: 20,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <CrescentMark size={18} />
+            <span style={{ fontFamily: SANS, fontWeight: 500, letterSpacing: '0.06em', fontSize: 13 }}>LUNA&nbsp;LAB</span>
+            <span style={{ width: 1, height: 12, background: ECL.faint, margin: '0 4px' }} />
+            <MonoLabel color={ECL.mute}>© 2026 · Made between LA &amp; elsewhere</MonoLabel>
+          </div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            {navItems.map((it) => (
+              <a key={it.id} href={`#${it.id}`} style={{ color: ECL.mute, fontFamily: SANS, fontSize: 13, textDecoration: 'none' }}>
+                {it.label}
+              </a>
+            ))}
+          </div>
+          <MonoLabel color={ECL.faint}>v 2.6 · build 0419</MonoLabel>
+        </footer>
+
+        <style>{`@keyframes ecl-spin { to { transform: rotate(360deg); } }`}</style>
+      </section>
     </div>
   );
 }

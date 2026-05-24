@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
+/* ── Eclipse design globals ─────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050507;
+  --foreground: #f2f1ee;
   
   /* Enhanced Spacing System */
   --spacing-xs: 0.5rem;    /* 8px */
@@ -55,12 +56,7 @@
   --animate-glow: glow 2s ease-in-out infinite alternate;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Eclipse: dark mode is always on */
 
 * {
   margin: 0;
@@ -1507,4 +1503,36 @@ body {
   color: rgba(34, 197, 94, 1);
 }
 
+/* ── Eclipse: native form dark styling ──────────────────── */
+body {
+  background: #050507;
+  color: #f2f1ee;
+}
 
+/* Select/option dark background */
+select option {
+  background: #0d0d12;
+  color: #f2f1ee;
+}
+
+/* Input placeholder */
+::placeholder {
+  color: rgba(242, 241, 238, 0.3);
+}
+
+/* Focus ring uses accent colour */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(160, 107, 255, 0.45) !important;
+  box-shadow: 0 0 0 2px rgba(160, 107, 255, 0.12);
+}
+
+/* Scrollbar: dark */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #050507; }
+::-webkit-scrollbar-thumb { background: rgba(242, 241, 238, 0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(160, 107, 255, 0.4); }
+
+/* Selection */
+::selection { background: rgba(160, 107, 255, 0.35); color: #f2f1ee; }

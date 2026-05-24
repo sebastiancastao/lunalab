@@ -1,26 +1,37 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Instrument_Serif, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-geist-sans",
+const instrumentSerif = Instrument_Serif({
+  weight: ["400"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
+  display: "swap",
+  variable: "--font-serif",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "LunaLab - Premier Software Agency",
-  description: "We are a premier software agency specializing in cutting-edge web applications, mobile solutions, and digital transformations that elevate your business.",
-  keywords: "software agency, web development, mobile apps, digital transformation, UI/UX design",
-  authors: [{ name: "LunaLab Team" }],
-  viewport: "width=device-width, initial-scale=1",
+  title: "Luna Lab — Software for small teams with large orbits",
+  description:
+    "Luna Lab is a remote studio building web applications, AI agents, automations and mobile apps for small businesses ready to leave the ground.",
+  keywords: "software agency, web development, mobile apps, AI agents, automations",
+  authors: [{ name: "Luna Lab" }],
   openGraph: {
-    title: "LunaLab - Premier Software Agency",
-    description: "Crafting digital excellence with cutting-edge technology solutions",
+    title: "Luna Lab — Software for small teams with large orbits",
+    description:
+      "Remote studio building web apps, AI agents, automations and mobile apps for small businesses.",
     type: "website",
   },
 };
@@ -33,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${geistMono.variable} antialiased`}
+        className={`${instrumentSerif.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
         {children}
       </body>
