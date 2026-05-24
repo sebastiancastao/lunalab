@@ -10,7 +10,10 @@
       "PowerShell($content = Get-Content \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\design_extracted.html\" -Raw; $lines = $content -split \"`n\"; for \\($i = 0; $i -lt $lines.Length; $i++\\) { if \\($lines[$i] -match \"luna-lab/project/index\\\\.html\\\\s+\\\\d{7}\"\\) { Write-Output \"Line $\\($i+1\\): $\\($lines[$i]\\)\"; break } })",
       "PowerShell($outDir = \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\design_bundle2\"; New-Item -ItemType Directory -Force -Path $outDir | Out-Null; $binFile = \"C:\\\\Users\\\\sebas\\\\.claude\\\\projects\\\\c--Users-sebas-OneDrive-Escritorio-lunalab---copia\\\\345b5d0c-54ef-4a80-808c-bf79340047ee\\\\tool-results\\\\webfetch-1779659501250-rhw6w5.bin\"; tar -xzf \"$binFile\" -C \"$outDir\"; Get-ChildItem -Recurse -File \"$outDir\" | ForEach-Object { $_.FullName })",
       "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\.next\\\\static\\\\development\")",
-      "PowerShell(Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\.next\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\.next-lunalab\" -ErrorAction SilentlyContinue; Write-Output \"Cleared\"; $resolved = [System.IO.Path]::GetFullPath\\(\"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\..\\\\..\\\\..\\\\..next-lunalab\"\\); Write-Output \"Will write to: $resolved\")"
+      "PowerShell(Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\.next\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\.next-lunalab\" -ErrorAction SilentlyContinue; Write-Output \"Cleared\"; $resolved = [System.IO.Path]::GetFullPath\\(\"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\..\\\\..\\\\..\\\\..next-lunalab\"\\); Write-Output \"Will write to: $resolved\")",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-sebas-OneDrive-Escritorio-lunalab---copia\\\\288a428d-1bf1-4765-b567-a5dea429ffa1\\\\tasks\\\\b62r4t1l8.output\" -Raw)"
     ],
     "additionalDirectories": [
       "C:\\Users\\sebas"

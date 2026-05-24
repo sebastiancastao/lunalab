@@ -587,8 +587,6 @@ export default function Home() {
         <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: ECL.ink, flexShrink: 0 }}>
           <CrescentMark size={22} />
           <span style={{ fontFamily: SANS, fontWeight: 500, letterSpacing: '0.06em', fontSize: 13 }}>LUNA&nbsp;LAB</span>
-          <span style={{ width: 1, height: 14, background: ECL.faint, margin: '0 4px' }} />
-          <MonoLabel color={ECL.mute} size={11}>LA · REMOTE</MonoLabel>
         </a>
 
         {/* Desktop links */}
@@ -800,8 +798,7 @@ export default function Home() {
             paddingTop: 18, borderTop: `1px solid ${ECL.hair}`, zIndex: 3,
           }}
         >
-          <MonoLabel color={ECL.mute}>LAT 34.0522° · LON −118.2437° · LA</MonoLabel>
-          <MonoLabel color={ECL.mute}>{en ? 'Booking Q3 · 2 slots remaining' : 'Agenda Q3 · 2 espacios disponibles'}</MonoLabel>
+<MonoLabel color={ECL.mute}>{en ? 'Booking Q3 · 2 slots remaining' : 'Agenda Q3 · 2 espacios disponibles'}</MonoLabel>
           <MissionClock />
         </div>
 
