@@ -13,7 +13,10 @@
       "PowerShell(Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\.next\" -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force \"C:\\\\Users\\\\sebas\\\\.next-lunalab\" -ErrorAction SilentlyContinue; Write-Output \"Cleared\"; $resolved = [System.IO.Path]::GetFullPath\\(\"C:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\lunalab - copia\\\\..\\\\..\\\\..\\\\..next-lunalab\"\\); Write-Output \"Will write to: $resolved\")",
       "Bash(npm view *)",
       "Bash(npm install *)",
-      "Bash(Get-Content \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-sebas-OneDrive-Escritorio-lunalab---copia\\\\288a428d-1bf1-4765-b567-a5dea429ffa1\\\\tasks\\\\b62r4t1l8.output\" -Raw)"
+      "Bash(Get-Content \"C:\\\\Users\\\\sebas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-sebas-OneDrive-Escritorio-lunalab---copia\\\\288a428d-1bf1-4765-b567-a5dea429ffa1\\\\tasks\\\\b62r4t1l8.output\" -Raw)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\sebas"
