@@ -18,8 +18,77 @@ const ECL = {
 const SERIF = 'var(--font-serif), Georgia, serif';
 const SANS  = 'var(--font-sans), system-ui, sans-serif';
 const MONO  = 'var(--font-mono), ui-monospace, monospace';
-const MOON_EMBED_URL = 'https://sketchfab.com/models/4db2273f6dd943b8ad7fa5e3b1b2431a/embed?preload=1&autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&transparent=1';
+const SKETCHFAB_VIEWER_API_URL = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
+const MOON_MODEL_UID = '4db2273f6dd943b8ad7fa5e3b1b2431a';
 const MOON_POSTER_URL = 'https://media.sketchfab.com/models/4db2273f6dd943b8ad7fa5e3b1b2431a/thumbnails/ad92c0da5f0941e58466218f127c48b9/8ec27d6792654960aedc76365e08524b.jpeg';
+
+type SketchfabApi = {
+  addEventListener: (event: string, callback: () => void) => void;
+  load: (callback?: () => void) => void;
+  start: () => void;
+};
+
+type SketchfabClient = {
+  init: (
+    uid: string,
+    options: {
+      autostart?: 0 | 1;
+      preload?: 0 | 1;
+      transparent?: 0 | 1;
+      ui_controls?: 0 | 1;
+      ui_infos?: 0 | 1;
+      ui_inspector?: 0 | 1;
+      ui_stop?: 0 | 1;
+      ui_watermark?: 0 | 1;
+      ui_watermark_link?: 0 | 1;
+      success: (api: SketchfabApi) => void;
+      error: () => void;
+    }
+  ) => void;
+};
+
+type SketchfabConstructor = new (iframe: HTMLIFrameElement) => SketchfabClient;
+
+declare global {
+  interface Window {
+    Sketchfab?: SketchfabConstructor;
+    __sketchfabViewerPromise?: Promise<SketchfabConstructor>;
+  }
+}
+
+function loadSketchfabViewer() {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Sketchfab viewer can only load in the browser.'));
+  }
+
+  if (window.Sketchfab) return Promise.resolve(window.Sketchfab);
+  if (window.__sketchfabViewerPromise) return window.__sketchfabViewerPromise;
+
+  window.__sketchfabViewerPromise = new Promise<SketchfabConstructor>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${SKETCHFAB_VIEWER_API_URL}"]`);
+    if (existingScript) {
+      existingScript.addEventListener('load', () => {
+        if (window.Sketchfab) resolve(window.Sketchfab);
+        else reject(new Error('Sketchfab viewer script loaded without a global constructor.'));
+      }, { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load Sketchfab viewer script.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = SKETCHFAB_VIEWER_API_URL;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+      if (window.Sketchfab) resolve(window.Sketchfab);
+      else reject(new Error('Sketchfab viewer script loaded without a global constructor.'));
+    };
+    script.onerror = () => reject(new Error('Failed to load Sketchfab viewer script.'));
+    document.head.appendChild(script);
+  });
+
+  return window.__sketchfabViewerPromise;
+}
 
 // ─── Seeded RNG (stable starfield) ───────────────────────────
 function mulberry32(seed: number) {
@@ -118,7 +187,49 @@ function MissionClock() {
 }
 
 const MoonHero = memo(function MoonHero() {
-  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [viewerReady, setViewerReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let revealTimeout = 0;
+
+    loadSketchfabViewer()
+      .then((Sketchfab) => {
+        const iframe = iframeRef.current;
+        if (!iframe || cancelled) return;
+
+        const client = new Sketchfab(iframe);
+        client.init(MOON_MODEL_UID, {
+          autostart: 1,
+          preload: 1,
+          transparent: 1,
+          ui_controls: 0,
+          ui_infos: 0,
+          ui_inspector: 0,
+          ui_stop: 0,
+          ui_watermark: 0,
+          ui_watermark_link: 0,
+          success(api) {
+            if (cancelled) return;
+            api.addEventListener('viewerready', () => {
+              revealTimeout = window.setTimeout(() => {
+                if (!cancelled) setViewerReady(true);
+              }, 120);
+            });
+            api.load();
+            api.start();
+          },
+          error() {},
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (revealTimeout) window.clearTimeout(revealTimeout);
+    };
+  }, []);
 
   return (
     <div
@@ -154,18 +265,28 @@ const MoonHero = memo(function MoonHero() {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            opacity: iframeLoaded ? 0 : 1,
-            transition: 'opacity 350ms ease',
+            opacity: viewerReady ? 0 : 1,
+            transition: 'opacity 450ms ease',
             pointerEvents: 'none',
           }}
         />
         <iframe
-          title="Moon"
-          src={MOON_EMBED_URL}
-          loading="eager"
-          onLoad={() => setIframeLoaded(true)}
-          style={{ position: 'absolute', width: '120%', height: '120%', top: '-10%', left: '-10%', border: 'none' }}
+          ref={iframeRef}
+          title="Moon 3D viewer"
+          style={{
+            position: 'absolute',
+            width: '120%',
+            height: '120%',
+            top: '-10%',
+            left: '-10%',
+            border: 'none',
+            opacity: viewerReady ? 1 : 0,
+            visibility: viewerReady ? 'visible' : 'hidden',
+            transition: 'opacity 450ms ease',
+            pointerEvents: viewerReady ? 'auto' : 'none',
+          }}
           allow="autoplay; fullscreen; xr-spatial-tracking"
+          allowFullScreen
         />
       </div>
     </div>
