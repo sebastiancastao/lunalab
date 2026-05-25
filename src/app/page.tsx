@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { memo, useEffect, useState, useRef, useMemo } from 'react';
 import { Shield, Clock, CheckCircle, Mail, Rocket } from 'lucide-react';
 import Image from 'next/image';
 import { useContactForm } from '@/hooks/useContactForm';
@@ -18,6 +18,8 @@ const ECL = {
 const SERIF = 'var(--font-serif), Georgia, serif';
 const SANS  = 'var(--font-sans), system-ui, sans-serif';
 const MONO  = 'var(--font-mono), ui-monospace, monospace';
+const MOON_EMBED_URL = 'https://sketchfab.com/models/4db2273f6dd943b8ad7fa5e3b1b2431a/embed?preload=1&autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&transparent=1';
+const MOON_POSTER_URL = 'https://media.sketchfab.com/models/4db2273f6dd943b8ad7fa5e3b1b2431a/thumbnails/ad92c0da5f0941e58466218f127c48b9/8ec27d6792654960aedc76365e08524b.jpeg';
 
 // ─── Seeded RNG (stable starfield) ───────────────────────────
 function mulberry32(seed: number) {
@@ -70,7 +72,7 @@ function MonoLabel({
   );
 }
 
-function Starfield({ count = 200 }: { count?: number }) {
+const Starfield = memo(function Starfield({ count = 200 }: { count?: number }) {
   const stars = useMemo(() => {
     const rng = mulberry32(17);
     return Array.from({ length: count }, () => ({
@@ -99,19 +101,76 @@ function Starfield({ count = 200 }: { count?: number }) {
       ))}
     </svg>
   );
-}
+});
 
 function MissionClock() {
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const tick = () => setNow(new Date());
+    tick();
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
-  const hh = String(now.getUTCHours()).padStart(2, '0');
-  const mm = String(now.getUTCMinutes()).padStart(2, '0');
-  const ss = String(now.getUTCSeconds()).padStart(2, '0');
-  return <MonoLabel color={ECL.mute}>{hh}:{mm}:{ss} UTC</MonoLabel>;
+  const label = now
+    ? `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')} UTC`
+    : '--:--:-- UTC';
+  return <MonoLabel color={ECL.mute}>{label}</MonoLabel>;
 }
+
+const MoonHero = memo(function MoonHero() {
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  return (
+    <div
+      className="hidden sm:block"
+      style={{
+        position: 'absolute',
+        right: 'clamp(20px, 5vw, 48px)',
+        top: 'clamp(90px, 12vh, 150px)',
+        width: 'clamp(200px, 32vw, 480px)',
+        height: 'clamp(200px, 32vw, 480px)',
+      }}
+    >
+      <div style={{ position: 'absolute', inset: 'clamp(-60px, -13vw, -130px)', borderRadius: '50%', border: `1px solid ${ECL.hair}` }} />
+      <div style={{ position: 'absolute', inset: 'clamp(-30px, -6.5vw, -65px)', borderRadius: '50%', border: `1px dashed ${ECL.hair}` }} />
+      <div style={{ position: 'absolute', inset: 'clamp(-60px, -13vw, -130px)', animation: 'ecl-orbit 26s linear infinite', transformOrigin: '50% 50%' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '-4px', width: 8, height: 8, background: ECL.accent, borderRadius: '50%', boxShadow: `0 0 20px ${ECL.accent}`, transform: 'translateX(-50%)' }} />
+      </div>
+      <div style={{ position: 'absolute', inset: 'clamp(-30px, -6.5vw, -65px)', animation: 'ecl-orbit 42s linear infinite reverse' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '-2px', width: 4, height: 4, background: ECL.ink, borderRadius: '50%', opacity: 0.6, transform: 'translateX(-50%)' }} />
+      </div>
+      <div style={{ position: 'absolute', inset: -40, borderRadius: '50%', background: `radial-gradient(circle at 86% 45%, ${ECL.accent}4a 0%, ${ECL.accent}00 60%)`, pointerEvents: 'none', filter: 'blur(6px)' }} />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#0c0b12', overflow: 'hidden', boxShadow: `0 0 100px ${ECL.accent}28` }}>
+        {/* Direct image fetch keeps the poster ahead of iframe startup work. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt=""
+          aria-hidden="true"
+          src={MOON_POSTER_URL}
+          fetchPriority="high"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: iframeLoaded ? 0 : 1,
+            transition: 'opacity 350ms ease',
+            pointerEvents: 'none',
+          }}
+        />
+        <iframe
+          title="Moon"
+          src={MOON_EMBED_URL}
+          loading="eager"
+          onLoad={() => setIframeLoaded(true)}
+          style={{ position: 'absolute', width: '120%', height: '120%', top: '-10%', left: '-10%', border: 'none' }}
+          allow="autoplay; fullscreen; xr-spatial-tracking"
+        />
+      </div>
+    </div>
+  );
+});
 
 // ─── Service cell ─────────────────────────────────────────────
 interface ServiceItem {
@@ -364,13 +423,11 @@ function WorkCard({ project: p, tall }: { project: WorkProject; tall: boolean })
 export default function Home() {
   const [lang, setLang] = useState<'en' | 'es'>('en');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [cursor, setCursor] = useState({ x: 0, y: 0, inside: false });
   const heroRef = useRef<HTMLElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const heroGlowRef = useRef<HTMLDivElement>(null);
   const { formData, isSubmitting, submitStatus, handleInputChange, handleSubmit } = useContactForm();
 
   useEffect(() => {
-    setMounted(true);
     try {
       const s = localStorage.getItem('lang');
       if (s === 'es') setLang('es');
@@ -382,23 +439,40 @@ export default function Home() {
   }, [lang]);
 
   useEffect(() => {
-    if (!mounted) return;
     const el = heroRef.current;
-    if (!el) return;
+    const glow = heroGlowRef.current;
+    if (!el || !glow) return;
+    let rafId = 0;
+    let nextX = 0;
+    let nextY = 0;
+
+    const updateGlow = () => {
+      rafId = 0;
+      glow.style.transform = `translate3d(${nextX - 240}px, ${nextY - 240}px, 0)`;
+      glow.style.opacity = '1';
+    };
+
     const onMove = (e: MouseEvent) => {
       const r = el.getBoundingClientRect();
-      setCursor({ x: e.clientX - r.left, y: e.clientY - r.top, inside: true });
+      nextX = e.clientX - r.left;
+      nextY = e.clientY - r.top;
+      if (!rafId) rafId = window.requestAnimationFrame(updateGlow);
     };
-    const onLeave = () => setCursor((p) => ({ ...p, inside: false }));
+    const onLeave = () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      glow.style.opacity = '0';
+    };
     el.addEventListener('mousemove', onMove);
     el.addEventListener('mouseleave', onLeave);
     return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
       el.removeEventListener('mousemove', onMove);
       el.removeEventListener('mouseleave', onLeave);
     };
-  }, [mounted]);
-
-  if (!mounted) return null;
+  }, []);
 
   const en = lang === 'en';
 
@@ -683,57 +757,29 @@ export default function Home() {
         ref={heroRef}
         style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: ECL.bg }}
       >
+        <MoonHero />
+
         <Starfield count={220} />
 
         {/* Cursor-follow glow */}
-        <div style={{
-          position: 'absolute',
-          left: cursor.x - 240,
-          top: cursor.y - 240,
-          width: 480, height: 480,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${ECL.accent}44, ${ECL.accent}00 65%)`,
-          opacity: cursor.inside ? 1 : 0,
-          transition: 'opacity 400ms ease',
-          pointerEvents: 'none',
-          mixBlendMode: 'screen',
-        }} />
-
-        {/* Moon — hidden on very small screens */}
         <div
-          className="hidden sm:block"
+          ref={heroGlowRef}
           style={{
             position: 'absolute',
-            right: `clamp(20px, 5vw, ${px})`,
-            top: 'clamp(90px, 12vh, 150px)',
-            width: 'clamp(200px, 32vw, 480px)',
-            height: 'clamp(200px, 32vw, 480px)',
+            left: 0,
+            top: 0,
+            width: 480,
+            height: 480,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${ECL.accent}44, ${ECL.accent}00 65%)`,
+            opacity: 0,
+            transform: 'translate3d(-240px, -240px, 0)',
+            transition: 'opacity 400ms ease',
+            pointerEvents: 'none',
+            mixBlendMode: 'screen',
+            willChange: 'transform, opacity',
           }}
-        >
-          {/* Outer orbital ring */}
-          <div style={{ position: 'absolute', inset: 'clamp(-60px, -13vw, -130px)', borderRadius: '50%', border: `1px solid ${ECL.hair}` }} />
-          {/* Inner orbital ring (dashed) */}
-          <div style={{ position: 'absolute', inset: 'clamp(-30px, -6.5vw, -65px)', borderRadius: '50%', border: `1px dashed ${ECL.hair}` }} />
-          {/* Orbiting dot 1 */}
-          <div style={{ position: 'absolute', inset: 'clamp(-60px, -13vw, -130px)', animation: 'ecl-orbit 26s linear infinite', transformOrigin: '50% 50%' }}>
-            <div style={{ position: 'absolute', left: '50%', top: '-4px', width: 8, height: 8, background: ECL.accent, borderRadius: '50%', boxShadow: `0 0 20px ${ECL.accent}`, transform: 'translateX(-50%)' }} />
-          </div>
-          {/* Orbiting dot 2 */}
-          <div style={{ position: 'absolute', inset: 'clamp(-30px, -6.5vw, -65px)', animation: 'ecl-orbit 42s linear infinite reverse' }}>
-            <div style={{ position: 'absolute', left: '50%', top: '-2px', width: 4, height: 4, background: ECL.ink, borderRadius: '50%', opacity: 0.6, transform: 'translateX(-50%)' }} />
-          </div>
-          {/* Corona glow */}
-          <div style={{ position: 'absolute', inset: -40, borderRadius: '50%', background: `radial-gradient(circle at 86% 45%, ${ECL.accent}4a 0%, ${ECL.accent}00 60%)`, pointerEvents: 'none', filter: 'blur(6px)' }} />
-          {/* Moon disc — Sketchfab 3D model */}
-          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#0c0b12', overflow: 'hidden', boxShadow: `0 0 100px ${ECL.accent}28` }}>
-            <iframe
-              title="Moon"
-              src="https://sketchfab.com/models/4db2273f6dd943b8ad7fa5e3b1b2431a/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&transparent=1"
-              style={{ position: 'absolute', width: '120%', height: '120%', top: '-10%', left: '-10%', border: 'none' }}
-              allow="autoplay; fullscreen; xr-spatial-tracking"
-            />
-          </div>
-        </div>
+        />
 
         {/* Headline block */}
         <div style={{
