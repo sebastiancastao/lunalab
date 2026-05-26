@@ -598,10 +598,11 @@ export default function Home() {
   const en = lang === 'en';
 
   const navItems = [
-    { id: 'work',     label: en ? 'Work'    : 'Trabajo'   },
-    { id: 'services', label: en ? 'Services': 'Servicios' },
-    { id: 'process',  label: en ? 'Process' : 'Proceso'   },
-    { id: 'contact',  label: en ? 'Contact' : 'Contacto'  },
+    { id: 'work',     label: en ? 'Work'    : 'Trabajo',   href: '#work'     },
+    { id: 'services', label: en ? 'Services': 'Servicios', href: '#services' },
+    { id: 'process',  label: en ? 'Process' : 'Proceso',   href: '#process'  },
+    { id: 'contact',  label: en ? 'Contact' : 'Contacto',  href: '#contact'  },
+    { id: 'blog',     label: 'Blog',                        href: '/blog'     },
   ];
 
   const projects: WorkProject[] = [
@@ -787,7 +788,7 @@ export default function Home() {
         {/* Desktop links */}
         <div className="hidden lg:flex" style={{ alignItems: 'center', gap: 32 }}>
           {navItems.map((it) => (
-            <a key={it.id} href={`#${it.id}`}
+            <a key={it.id} href={it.href}
               style={{ color: ECL.ink, fontFamily: SANS, fontSize: 14, textDecoration: 'none', opacity: 0.9 }}>
               {it.label}
             </a>
@@ -849,7 +850,7 @@ export default function Home() {
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {navItems.map((it) => (
-              <a key={it.id} href={`#${it.id}`} onClick={() => setMobileOpen(false)}
+              <a key={it.id} href={it.href} onClick={() => setMobileOpen(false)}
                 style={{ color: ECL.ink, fontFamily: SANS, fontSize: 20, textDecoration: 'none' }}>
                 {it.label}
               </a>
@@ -1212,7 +1213,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
             {navItems.map((it) => (
-              <a key={it.id} href={`#${it.id}`} style={{ color: ECL.mute, fontFamily: SANS, fontSize: 13, textDecoration: 'none' }}>
+              <a key={it.id} href={it.href} style={{ color: ECL.mute, fontFamily: SANS, fontSize: 13, textDecoration: 'none' }}>
                 {it.label}
               </a>
             ))}
