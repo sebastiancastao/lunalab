@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { posts } from './blog/posts';
 
-const BASE_URL = 'https://lunalab.studio';
+const BASE_URL = 'https://www.luna-lab.pro';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const blogEntries: MetadataRoute.Sitemap = posts.map((post) => ({
