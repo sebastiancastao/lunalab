@@ -2,9 +2,20 @@ import Link from 'next/link';
 import { posts } from './posts';
 import type { Metadata } from 'next';
 
+const BASE_URL = 'https://www.luna-lab.pro';
+
 export const metadata: Metadata = {
-  title: 'Blog — Luna Lab',
+  title: 'Blog',
   description: 'Thoughts on software, AI agents, and building products that last.',
+  alternates: {
+    canonical: '/blog',
+  },
+  openGraph: {
+    title: 'Blog — Luna Lab',
+    description: 'Thoughts on software, AI agents, and building products that last.',
+    url: `${BASE_URL}/blog`,
+    type: 'website',
+  },
 };
 
 const ECL = {

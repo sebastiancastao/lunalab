@@ -16,6 +16,8 @@ const SERIF = 'var(--font-serif), Georgia, serif';
 const SANS  = 'var(--font-sans), system-ui, sans-serif';
 const MONO  = 'var(--font-mono), ui-monospace, monospace';
 
+const BASE_URL = 'https://www.luna-lab.pro';
+
 function CrescentMark({ size = 22 }: { size?: number }) {
   const id = `cm-${size}-post`;
   return (
@@ -41,8 +43,23 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const post = getPost(slug);
   if (!post) return {};
   return {
-    title: `${post.title} — Luna Lab`,
+    title: post.title,
     description: post.excerpt,
+    alternates: {
+      canonical: `/blog/${post.slug}`,
+    },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url: `${BASE_URL}/blog/${post.slug}`,
+      type: 'article',
+      publishedTime: post.date,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+    },
   };
 }
 
@@ -54,8 +71,40 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const px = 'clamp(20px, 5.5vw, 80px)';
   const maxW = `calc(740px + clamp(40px, 11vw, 160px) * 2)`;
 
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: { '@type': 'Organization', name: 'Luna Lab', url: BASE_URL },
+    publisher: { '@type': 'Organization', name: 'Luna Lab', url: BASE_URL },
+    mainEntityOfPage: `${BASE_URL}/blog/${post.slug}`,
+  };
+
+  const faqJsonLd = post.faq && post.faq.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: post.faq.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  } : null;
+
   return (
     <div style={{ background: ECL.bg, color: ECL.ink, fontFamily: SANS, minHeight: '100vh' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       <style>{`
         .ll-prose p  { margin: 0 0 20px; font-size: 17px; line-height: 1.7; color: ${ECL.mute}; font-family: ${SANS}; }
         .ll-prose h3 { margin: 44px 0 16px; font-family: ${SERIF}; font-style: italic; font-weight: 400; font-size: clamp(22px, 2.5vw, 30px); letter-spacing: -0.015em; color: ${ECL.ink}; }
@@ -63,6 +112,10 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         .ll-prose li { padding: 10px 0 10px 24px; border-bottom: 1px solid ${ECL.hair}; position: relative; font-size: 16px; line-height: 1.6; color: ${ECL.mute}; font-family: ${SANS}; }
         .ll-prose li::before { content: '—'; position: absolute; left: 0; color: ${ECL.accent}; }
         .ll-prose strong { color: ${ECL.ink}; font-weight: 500; }
+        .ll-faq-item summary { font-family: ${SERIF}; font-style: italic; font-size: clamp(18px, 2vw, 24px); letter-spacing: -0.01em; color: ${ECL.ink}; cursor: pointer; list-style: none; padding: 22px 0; }
+        .ll-faq-item summary::-webkit-details-marker { display: none; }
+        .ll-faq-item p { margin: 0 0 22px; font-size: 16px; line-height: 1.6; color: ${ECL.mute}; font-family: ${SANS}; }
+        .ll-faq-item { border-bottom: 1px solid ${ECL.hair}; }
       `}</style>
 
       {/* Nav */}
@@ -124,9 +177,32 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       {/* Post body */}
       <div
         className="ll-prose"
-        style={{ padding: `clamp(48px, 6vh, 72px) ${px} clamp(80px, 12vh, 120px)`, maxWidth: maxW }}
+        style={{ padding: `clamp(48px, 6vh, 72px) ${px} 0`, maxWidth: maxW }}
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
+
+      {/* FAQ */}
+      {post.faq && post.faq.length > 0 && (
+        <div style={{ padding: `clamp(40px, 6vh, 64px) ${px} clamp(80px, 12vh, 120px)`, maxWidth: maxW }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <span style={{ width: 28, height: 1, background: ECL.accent, flexShrink: 0 }} />
+            <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ECL.accent }}>
+              FAQ
+            </span>
+          </div>
+          <h2 style={{ margin: '20px 0 0', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(26px, 3.5vw, 40px)', letterSpacing: '-0.015em' }}>
+            Common questions
+          </h2>
+          <div style={{ marginTop: 24, borderTop: `1px solid ${ECL.hair}` }}>
+            {post.faq.map((item) => (
+              <details key={item.question} className="ll-faq-item">
+                <summary>{item.question}</summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ borderTop: `1px solid ${ECL.hair}`, padding: `clamp(40px, 6vh, 60px) ${px}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>

@@ -769,6 +769,8 @@ export default function Home() {
   return (
     <div style={{ background: ECL.bg, color: ECL.ink, fontFamily: SANS, overflowX: 'hidden' }}>
 
+      {/* ── HEADER ────────────────────────────────────────── */}
+      <header>
       {/* ── NAV ───────────────────────────────────────────── */}
       <nav
         style={{
@@ -873,7 +875,9 @@ export default function Home() {
           </div>
         </div>
       )}
+      </header>
 
+      <main>
       {/* ── HERO ──────────────────────────────────────────── */}
       <section
         ref={heroRef}
@@ -1223,6 +1227,7 @@ export default function Home() {
 
         <style>{`@keyframes ecl-spin { to { transform: rotate(360deg); } }`}</style>
       </section>
+      </main>
     </div>
   );
 }

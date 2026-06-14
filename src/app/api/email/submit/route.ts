@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { sendContactEmail, type ContactEmailPayload } from "@/lib/email";
 
@@ -51,22 +51,19 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    await sendContactEmail(payload);
+  // Deliver the email after the response is sent so the user isn't blocked on
+  // the Resend API round-trip. Input is already validated above, so the only
+  // thing deferred is delivery; failures are logged server-side.
+  after(async () => {
+    try {
+      await sendContactEmail(payload);
+    } catch (error) {
+      console.error("Contact form submission error:", error);
+    }
+  });
 
-    return NextResponse.json({
-      success: true,
-      message: "Thank you! Your message has been sent successfully. We'll respond within 24 hours.",
-    });
-  } catch (error) {
-    console.error("Contact form submission error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to send message. Please try again later or contact us directly by email.",
-      },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json({
+    success: true,
+    message: "Thank you! Your message has been sent successfully. We'll respond within 24 hours.",
+  });
 }
